@@ -1,9 +1,9 @@
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import serializers
 
-from .models import CustomUser, Question, QuestionQuota
+from .models import CustomUser, Question, QuestionQuota, TestCase, SubmitRecord
 from .serializers import MessageSerializer
 
 class QuestionSerializer(serializers.Serializer):
@@ -13,7 +13,6 @@ class QuestionSerializer(serializers.Serializer):
 
 class GetQuestionListView(APIView):
     @extend_schema(
-        request=None,
         responses=QuestionSerializer(many=True),
         tags=['Question']
     )
@@ -21,15 +20,39 @@ class GetQuestionListView(APIView):
         all_questions = Question.objects.all()
         user = CustomUser.objects.get(username=request.user)
         return_questions = []
-        qid = 1
         for question in all_questions:
             this_q = {}
             this_q['title'] = question.title
-            this_q['id'] = qid
+            this_q['id'] = question.id
             this_q['finished'] = QuestionQuota.objects.get(user=user, question=question).passed
             return_questions.append(question)
-            qid += 1
         return Response(return_questions)
+
+class QuestionSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    description = serializers.CharField()
+    quota = serializers.IntegerField()
+    start_code_template_file = serializers.FileField()
+
+class GetQuestionView(APIView):
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="id", type=int, description="question id")
+        ],
+        responses={200:QuestionSerializer, 400:MessageSerializer},
+        tags=['Question']
+    )
+    def get(self, request):
+        question_id = request.query_params.get('id')
+        if not Question.objects.filter(id=question_id).exists():
+            return Response({"status": False, "message": "Invalid question id"})
+        question = Question.objects.get(id=question_id)
+        return Response({
+            "title": question.title,
+            "description": question.description,
+            "quota": QuestionQuota.objects.get(user=request.user, question=question).quota,
+            "start_code_template_file": question.start_code_template_file
+        })
 
 class CreateQuestionSerializer(serializers.Serializer):
     title = serializers.CharField()
@@ -57,3 +80,45 @@ class CreateQuestionView(APIView):
             question_quota = QuestionQuota(user=user, question=question)
             question_quota.save()
         return Response({"status": True, "message": "Question created successfully"})
+
+class SubmitAnswerSerializer(serializers.Serializer):
+    question_id = serializers.IntegerField()
+    answer = serializers.FileField()
+
+class SubmitAnswerView(APIView):
+    @extend_schema(
+        request={"multipart/form-data": SubmitAnswerSerializer},
+        responses=MessageSerializer,
+        tags=['Question']
+    )
+    def post(self, request):
+        if not SubmitAnswerSerializer(data=request.data).is_valid():
+            return Response({"status": False, "message": "Invalid data"})
+        question_id = request.data.get('question_id')
+        if not Question.objects.filter(id=question_id).exists():
+            return Response({"status": False, "message": "Invalid question id"})
+        submit_record = SubmitRecord.objects.create(user=request.user, answer=request.data.get('answer'))
+        question = Question.objects.get(id=question_id)
+        test_cases = TestCase.objects.filter(question=question)
+        answer_code = submit_record.answer
+        case_num, total_case_num = 1, len(test_cases)
+        for test_case in test_cases:
+            test_case_input = test_case.input
+            test_case_output = test_case.output
+            user_output = run_code_in_docker(answer_code, test_case_input)
+            if user_output != test_case_output and not test_case.hidden:
+                return Response({"status": True, "message": f"Test case failed in {case_num}/{total_case_num}", "expected_output": test_case_output, "user_output": user_output})
+            elif user_output != test_case_output and test_case.hidden:
+                return Response({"status": True, "message": "Test case failed in hidden case, good luck", "expected_output": "", "user_output": ""})
+            case_num += 1
+        question_quota = QuestionQuota.objects.get(user=request.user, question=question)
+        question_quota.passed = True
+        question_quota.save()
+        return Response({"status": True, "message": "All test cases passed"})
+
+        
+def run_code_in_docker(answer):
+    
+    result = subprocess.run([
+        
+    ], capture_output=True, text=True, timeout=5)
