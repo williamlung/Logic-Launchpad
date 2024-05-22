@@ -1,3 +1,5 @@
+import subprocess
+
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -116,9 +118,6 @@ class SubmitAnswerView(APIView):
         question_quota.save()
         return Response({"status": True, "message": "All test cases passed"})
 
-        
-def run_code_in_docker(answer):
-    
-    result = subprocess.run([
-        
-    ], capture_output=True, text=True, timeout=5)
+# check code in gcc:lastest    
+def run_code_in_docker(answer_code, test_case_input):
+    pass

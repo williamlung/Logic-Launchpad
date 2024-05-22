@@ -25,3 +25,4 @@ class TestCase(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     input = models.FileField(upload_to='test_cases')
     output = models.FileField(upload_to='test_cases')
+    hidden = models.BooleanField(default=False)
