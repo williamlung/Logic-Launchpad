@@ -8,14 +8,14 @@ from rest_framework import serializers
 from .models import CustomUser, Question, QuestionQuota, TestCase, SubmitRecord
 from .serializers import MessageSerializer
 
-class QuestionSerializer(serializers.Serializer):
+class QuestionDetailsSerializer(serializers.Serializer):
     title = serializers.CharField()
     id = serializers.IntegerField()
     finished = serializers.BooleanField()
 
 class GetQuestionListView(APIView):
     @extend_schema(
-        responses=QuestionSerializer(many=True),
+        responses=QuestionDetailsSerializer(many=True),
         tags=['Question']
     )
     def get(self, request):
@@ -30,7 +30,7 @@ class GetQuestionListView(APIView):
             return_questions.append(question)
         return Response(return_questions)
 
-class QuestionSerializer(serializers.Serializer):
+class QuestionDetailsSerializer(serializers.Serializer):
     title = serializers.CharField()
     description = serializers.CharField()
     quota = serializers.IntegerField()
@@ -41,7 +41,7 @@ class GetQuestionView(APIView):
         parameters=[
             OpenApiParameter(name="id", type=int, description="question id")
         ],
-        responses={200:QuestionSerializer, 400:MessageSerializer},
+        responses={200:QuestionDetailsSerializer, 400:MessageSerializer},
         tags=['Question']
     )
     def get(self, request):
