@@ -1,3 +1,11 @@
+#
+answers/
+test_cases/
+code_templates/
+temp.c
+temp.in
+temp.out
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

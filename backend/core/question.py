@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -8,14 +9,14 @@ from rest_framework import serializers
 from .models import CustomUser, Question, QuestionQuota, TestCase, SubmitRecord
 from .serializers import MessageSerializer
 
-class QuestionDetailsSerializer(serializers.Serializer):
+class QuestionSerializer(serializers.Serializer):
     title = serializers.CharField()
     id = serializers.IntegerField()
     finished = serializers.BooleanField()
 
 class GetQuestionListView(APIView):
     @extend_schema(
-        responses=QuestionDetailsSerializer(many=True),
+        responses=QuestionSerializer(many=True),
         tags=['Question']
     )
     def get(self, request):
@@ -77,7 +78,6 @@ class CreateQuestionView(APIView):
         start_code_template_file = request.data.get('start_code_template_file')
         question = Question(title=title, description=description, week=week, start_code_template_file=start_code_template_file)
         question.save()
-        # need to create question quota for all users
         for user in CustomUser.objects.all():
             question_quota = QuestionQuota(user=user, question=question)
             question_quota.save()
@@ -102,7 +102,11 @@ class SubmitAnswerView(APIView):
         submit_record = SubmitRecord.objects.create(user=request.user, answer=request.data.get('answer'))
         question = Question.objects.get(id=question_id)
         test_cases = TestCase.objects.filter(question=question)
+        if len(test_cases) == 0:
+            return Response({"status": True, "message": "No test cases to run"})
         answer_code = submit_record.answer
+        question_quota = QuestionQuota.objects.get(user=request.user, question=question)
+        question_quota.quota -= 1
         case_num, total_case_num = 1, len(test_cases)
         for test_case in test_cases:
             test_case_input = test_case.input
@@ -113,11 +117,21 @@ class SubmitAnswerView(APIView):
             elif user_output != test_case_output and test_case.hidden:
                 return Response({"status": True, "message": "Test case failed in hidden case, good luck", "expected_output": "", "user_output": ""})
             case_num += 1
-        question_quota = QuestionQuota.objects.get(user=request.user, question=question)
         question_quota.passed = True
         question_quota.save()
         return Response({"status": True, "message": "All test cases passed"})
 
-# check code in gcc:lastest    
+
 def run_code_in_docker(answer_code, test_case_input):
-    pass
+    code = answer_code.read().decode()
+    print(code)
+    print(type(code))
+    print(len(code))
+    with open("temp.c", "w") as f:
+        f.write(code)
+    input_data = test_case_input.read().decode()
+    with open("temp.in", "w") as f:
+        f.write(input_data)
+    subprocess.run(["docker", "run", "-v", f"{os.getcwd()}/temp.c:/temp.c", "-v", f"{os.getcwd()}/temp.in:/temp.in", "gcc:latest", "sh", "-c", "gcc /temp.c -o /temp && /temp < /temp.in > /temp.out"])
+    with open("temp.out", "r") as f:
+        return f.read()
