@@ -1,5 +1,4 @@
 import os
-import subprocess
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.views import APIView
@@ -105,13 +104,17 @@ class SubmitAnswerView(APIView):
         if len(test_cases) == 0:
             return Response({"status": True, "message": "No test cases to run"})
         answer_code = submit_record.answer
+        answer_code = answer_code.read().decode('utf-8')
         question_quota = QuestionQuota.objects.get(user=request.user, question=question)
         question_quota.quota -= 1
         case_num, total_case_num = 1, len(test_cases)
         for test_case in test_cases:
             test_case_input = test_case.input
             test_case_output = test_case.output
+            test_case_input = test_case_input.read().decode('utf-8')
+            test_case_output = test_case_output.read().decode('utf-8')
             user_output = run_code_in_docker(answer_code, test_case_input)
+            print(f'User output: {user_output}')
             if user_output != test_case_output and not test_case.hidden:
                 return Response({"status": True, "message": f"Test case failed in {case_num}/{total_case_num}", "expected_output": test_case_output, "user_output": user_output})
             elif user_output != test_case_output and test_case.hidden:
@@ -121,17 +124,15 @@ class SubmitAnswerView(APIView):
         question_quota.save()
         return Response({"status": True, "message": "All test cases passed"})
 
+def run_code_in_docker(answer_code:str, test_case_input:str) -> str:
+    temp_dir = os.path.join(os.getcwd(), 'temp')
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+    with open(os.path.join(temp_dir, "temp.c"), "w") as f:
+        f.write(answer_code)
+    with open(os.path.join(temp_dir, "temp.in"), "w") as f:
+        f.write(test_case_input)
 
-def run_code_in_docker(answer_code, test_case_input):
-    code = answer_code.read().decode()
-    print(code)
-    print(type(code))
-    print(len(code))
-    with open("temp.c", "w") as f:
-        f.write(code)
-    input_data = test_case_input.read().decode()
-    with open("temp.in", "w") as f:
-        f.write(input_data)
-    subprocess.run(["docker", "run", "-v", f"{os.getcwd()}/temp.c:/temp.c", "-v", f"{os.getcwd()}/temp.in:/temp.in", "gcc:latest", "sh", "-c", "gcc /temp.c -o /temp && /temp < /temp.in > /temp.out"])
-    with open("temp.out", "r") as f:
-        return f.read()
+    run_command = "docker run -v %cd%/temp:/temp gcc:latest /bin/sh -c \"gcc -o /temp/temp /temp/temp.c && /temp/temp < /temp/temp.in > /temp/output.txt && cat /temp/output.txt\""
+    output = os.popen(run_command).read()
+    return output
