@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.views import APIView
@@ -27,7 +28,7 @@ class GetQuestionListView(APIView):
             this_q['title'] = question.title
             this_q['id'] = question.id
             this_q['finished'] = QuestionQuota.objects.get(user=user, question=question).passed
-            return_questions.append(question)
+            return_questions.append(this_q)
         return Response(return_questions)
 
 class QuestionDetailsSerializer(serializers.Serializer):
@@ -104,21 +105,24 @@ class SubmitAnswerView(APIView):
         if len(test_cases) == 0:
             return Response({"status": True, "message": "No test cases to run"})
         answer_code = submit_record.answer
-        answer_code = answer_code.read().decode('utf-8')
+        answer_code = answer_code.read().replace(b'\r\n', b'\n').decode('utf-8')
         question_quota = QuestionQuota.objects.get(user=request.user, question=question)
         question_quota.quota -= 1
+        question_quota.save()
         case_num, total_case_num = 1, len(test_cases)
         for test_case in test_cases:
             test_case_input = test_case.input
             test_case_output = test_case.output
-            test_case_input = test_case_input.read().decode('utf-8')
-            test_case_output = test_case_output.read().decode('utf-8')
-            user_output = run_code_in_docker(answer_code, test_case_input)
-            print(f'User output: {user_output}')
-            if user_output != test_case_output and not test_case.hidden:
-                return Response({"status": True, "message": f"Test case failed in {case_num}/{total_case_num}", "expected_output": test_case_output, "user_output": user_output})
-            elif user_output != test_case_output and test_case.hidden:
-                return Response({"status": True, "message": "Test case failed in hidden case, good luck", "expected_output": "", "user_output": ""})
+            test_case_input = test_case_input.read().replace(b'\r\n', b'\n').decode('utf-8')
+            test_case_output = test_case_output.read().replace(b'\r\n', b'\n').decode('utf-8')
+            docker_answer = run_code_in_docker(answer_code, test_case_input)
+            if docker_answer["status"]:
+                if docker_answer["answer"] != test_case_output and not test_case.hidden:
+                    return Response({"status": True, "message": f"Test case failed in {case_num}/{total_case_num}", "expected_output": test_case_output, "user_output": docker_answer["answer"]})
+                elif docker_answer["answer"] != test_case_output and test_case.hidden:
+                    return Response({"status": True, "message": "Test case failed in hidden case, good luck", "expected_output": "", "user_output": ""})
+            else:
+                return Response({"status": False, "message": f"Test case failed in {case_num}/{total_case_num}", "error": docker_answer["message"]})
             case_num += 1
         question_quota.passed = True
         question_quota.save()
@@ -126,13 +130,22 @@ class SubmitAnswerView(APIView):
 
 def run_code_in_docker(answer_code:str, test_case_input:str) -> str:
     temp_dir = os.path.join(os.getcwd(), 'temp')
-    if not os.path.exists(temp_dir):
-        os.makedirs(temp_dir)
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
+    os.makedirs(temp_dir)
     with open(os.path.join(temp_dir, "temp.c"), "w") as f:
         f.write(answer_code)
     with open(os.path.join(temp_dir, "temp.in"), "w") as f:
         f.write(test_case_input)
-
-    run_command = "docker run -v %cd%/temp:/temp gcc:latest /bin/sh -c \"gcc -o /temp/temp /temp/temp.c && /temp/temp < /temp/temp.in > /temp/output.txt && cat /temp/output.txt\""
+    run_command = "docker run --rm -v %cd%/temp:/temp gcc:latest /bin/sh -c \"gcc -o /temp/temp /temp/temp.c 2> /temp/gcc_error.txt && /temp/temp < /temp/temp.in > /temp/output.txt 2> /temp/runtime_error.txt && cat /temp/output.txt\""
     output = os.popen(run_command).read()
-    return output
+    if os.path.exists(os.path.join(temp_dir, "gcc_error.txt")):
+        with open(os.path.join(temp_dir, "gcc_error.txt"), "r") as f:
+            error_msg = f.read()
+        return {"status": False, "message": error_msg}
+    elif os.path.exists(os.path.join(temp_dir, "runtime_error.txt")):
+        with open(os.path.join(temp_dir, "runtime_error.txt"), "r") as f:
+            error_msg = f.read()
+        return {"status": False, "message": error_msg}
+    else:
+        return {"status": True, "answer": output}
