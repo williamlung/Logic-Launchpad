@@ -5,6 +5,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import serializers
+from django.conf import settings
 
 from .models import CustomUser, Question, QuestionQuota, TestCase, SubmitRecord
 from .serializers import MessageSerializer
@@ -19,8 +20,8 @@ class GetQuestionListView(APIView):
         responses=QuestionSerializer(many=True),
         tags=['Question']
     )
-    def get(self, request):
-        all_questions = Question.objects.all()
+    def get(self, request, week=settings.WEEK):
+        all_questions = Question.objects.filter(week=week)
         user = CustomUser.objects.get(username=request.user)
         return_questions = []
         for question in all_questions:

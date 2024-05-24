@@ -10,8 +10,8 @@ from .models import Question, TestCase
 
 class TestCaseSerializer(serializers.Serializer):
     question_id = serializers.IntegerField()
-    input = serializers.FileField()
-    output = serializers.FileField()
+    input = serializers.FileField(allow_empty_file=True)
+    output = serializers.FileField(allow_empty_file=True)
     hidden = serializers.BooleanField(default=False)
 
 class CreateTestCaseView(APIView):
@@ -22,7 +22,6 @@ class CreateTestCaseView(APIView):
     )
     def post(self, request):
         try:
-            # print(request.data)
             if not TestCaseSerializer(data=request.data).is_valid():
                 return Response({"status": False, "message": "Invalid data"})
             question_id = request.data.get('question_id')

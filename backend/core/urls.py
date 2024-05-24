@@ -14,6 +14,7 @@ urlpatterns = [
     # Question
     path('get/question/', GetQuestionView.as_view(), name='get_question'),
     path('get/questions/', GetQuestionListView.as_view(), name='get_questions'),
+    path('get/questions/<int:week>', GetQuestionListView.as_view(), name='get_questions'),
     path('create/question/', CreateQuestionView.as_view(), name='create_question'),
     path('submit/answer/', SubmitAnswerView.as_view(), name='submit_answer'),
     # TestCase
