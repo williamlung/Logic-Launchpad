@@ -215,9 +215,10 @@ class MainWindow(QMainWindow):
             script += n
         self.code_script_input.setText(script)
         self.question_list.setCurrentRow(index)
-        self.update_test_cases_list(qid)
+        self.update_test_cases_list()
 
-    def update_test_cases_list(self, qid):
+    def update_test_cases_list(self):
+        qid = self.questions[self.question_list.currentRow()]["id"]
         test_cases = self.api_loader.get_test_cases(qid)
         if test_cases is None:
             QMessageBox.warning(self, "Error", "Unable to connect to server.")
