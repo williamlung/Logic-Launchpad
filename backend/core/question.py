@@ -137,15 +137,17 @@ def run_code_in_docker(answer_code:str, test_case_input:str) -> str:
         f.write(answer_code)
     with open(os.path.join(temp_dir, "temp.in"), "w") as f:
         f.write(test_case_input)
-    run_command = "docker run --rm -v %cd%/temp:/temp gcc:latest /bin/sh -c \"gcc -o /temp/temp /temp/temp.c 2> /temp/gcc_error.txt && /temp/temp < /temp/temp.in > /temp/output.txt 2> /temp/runtime_error.txt && cat /temp/output.txt\""
+    run_command = "docker run --rm -v \"%cd%\"/temp:/temp gcc:latest /bin/sh -c \"gcc -o /temp/temp /temp/temp.c 2> /temp/gcc_error.txt && /temp/temp < /temp/temp.in > /temp/output.txt 2> /temp/runtime_error.txt && cat /temp/output.txt\""
     output = os.popen(run_command).read()
     if os.path.exists(os.path.join(temp_dir, "gcc_error.txt")):
         with open(os.path.join(temp_dir, "gcc_error.txt"), "r") as f:
             error_msg = f.read()
-        return {"status": False, "message": error_msg}
-    elif os.path.exists(os.path.join(temp_dir, "runtime_error.txt")):
+        if len(error_msg) != 0:
+            return {"status": False, "message": error_msg}
+    if os.path.exists(os.path.join(temp_dir, "runtime_error.txt")):
         with open(os.path.join(temp_dir, "runtime_error.txt"), "r") as f:
             error_msg = f.read()
-        return {"status": False, "message": error_msg}
-    else:
-        return {"status": True, "answer": output}
+        if len(error_msg) != 0:
+            return {"status": False, "message": error_msg}
+        
+    return {"status": True, "answer": output}
