@@ -1,6 +1,6 @@
 import traceback
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import serializers
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
@@ -41,3 +41,35 @@ class CreateTestCaseView(APIView):
         except:
             traceback.print_exc()
             return Response({"status": False, "message": "Unable to create test case, please contact admin"})
+
+class TestCaseSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+    input = serializers.CharField()
+    output = serializers.CharField()
+    hidden = serializers.BooleanField()
+
+class GetTestCaseView(APIView):
+    permission_classes = [IsAdminUser]
+    @extend_schema(
+        parameters=[OpenApiParameter(name='question_id', type=int)],
+        responses=TestCaseSerializer(many=True),
+        tags=['TestCase']
+    )
+    def get(self, request):
+        try:
+            question_id = request.query_params.get('question_id')
+            if not Question.objects.filter(id=question_id).exists():
+                return Response({"status": False, "message": "Invalid question id"})
+            test_cases = TestCase.objects.filter(question_id=question_id)
+            return_data = []
+            for test_case in test_cases:
+                return_data.append({
+                    "id": test_case.id,
+                    "input": test_case.input,
+                    "output": test_case.output,
+                    "hidden": test_case.hidden
+                })
+            return Response(return_data)
+        except:
+            traceback.print_exc()
+            return Response({"status": False, "message": "Unable to get test cases, please contact admin"})

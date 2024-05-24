@@ -47,7 +47,6 @@ class ManageTools:
     def __init__(self, url, week) -> None:
         self.url = url
         self.week = week
-        print("Login successful")
     
     def login(self, username, password):
         try:
@@ -116,3 +115,68 @@ class ManageTools:
         except:
             traceback.print_exc()
             print("Unable to get questions")
+
+    def get_question_info(self, question_id):
+        try:
+            url = "http://"+self.url+"/api/get/question/"
+            headers = {
+                'Authorization': f'Bearer {self.access_token}'
+            }
+            params = {
+                'id': question_id
+            }
+            response = requests.get(url, headers=headers, params=params)
+            return response.json()
+        except:
+            traceback.print_exc()
+            print("Unable to get question info")
+    
+    def delete_question(self, question_id):
+        try:
+            url = "http://"+self.url+"/api/delete/question/"
+            headers = {
+                'Authorization': f'Bearer {self.access_token}'
+            }
+            data = {
+                'id': question_id
+            }
+            response = requests.post(url, headers=headers, data=data)
+            return response.json()
+        except:
+            traceback.print_exc()
+            print("Unable to delete question")
+
+    def update_question(self, question_id, title, description, start_code_template):
+        try:
+            url = "http://"+self.url+"/api/update/question/"
+            headers = {
+                'Authorization': f'Bearer {self.access_token}'
+            }
+            files = {
+                'start_code_template_file': StringIO(start_code_template)
+            }
+            data = {
+                'id': question_id,
+                'title': title,
+                'description': description
+            }
+            response = requests.post(url, headers=headers, data=data, files=files)
+            return response.json()
+        except:
+            traceback.print_exc()
+            print("Unable to update question")
+    
+    def get_test_cases(self, qid):
+        try:
+            url = "http://"+self.url+"/api/get/testcases/"
+            headers = {
+                'Authorization': f'Bearer {self.access_token}'
+            }
+            params = {
+                'question_id': qid
+            }
+            response = requests.get(url, headers=headers, params=params)
+            return response.json()
+        except:
+            traceback.print_exc()
+            print("Unable to get test cases")

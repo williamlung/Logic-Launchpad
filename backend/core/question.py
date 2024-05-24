@@ -65,16 +65,21 @@ class CreateQuestionSerializer(serializers.Serializer):
     week = serializers.IntegerField()
     start_code_template_file = serializers.FileField()
 
+class ResponseCreateQuestionSerializer(serializers.Serializer):
+    status = serializers.BooleanField()
+    message = serializers.CharField()
+    id = serializers.IntegerField()
+
 class CreateQuestionView(APIView):
     permission_classes = [IsAdminUser]
     @extend_schema(
         request={"multipart/form-data": CreateQuestionSerializer},
-        responses=MessageSerializer,
+        responses={"200": ResponseCreateQuestionSerializer, "400": MessageSerializer},
         tags=['Question']
     )
     def post(self, request):
         if not CreateQuestionSerializer(data=request.data).is_valid():
-            return Response({"status": False, "message": "Invalid data"})
+            return Response({"status": False, "message": "Invalid data"}, status=400)
         title = request.data.get('title')
         description = request.data.get('description')
         week = request.data.get('week')
@@ -84,7 +89,53 @@ class CreateQuestionView(APIView):
         for user in CustomUser.objects.all():
             question_quota = QuestionQuota(user=user, question=question)
             question_quota.save()
-        return Response({"status": True, "message": "Question created successfully"})
+        return Response({"status": True, "message": "Question created successfully", "id": question.id})
+
+class UpdateQuestionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    start_code_template_file = serializers.FileField()
+
+class UpdateQuestionView(APIView):
+    permission_classes = [IsAdminUser]
+    @extend_schema(
+        request={"multipart/form-data": UpdateQuestionSerializer},
+        responses=MessageSerializer,
+        tags=['Question']
+    )
+    def post(self, request):
+        if not UpdateQuestionSerializer(data=request.data).is_valid():
+            return Response({"status": False, "message": "Invalid data"})
+        question_id = request.data.get('id')
+        if not Question.objects.filter(id=question_id).exists():
+            return Response({"status": False, "message": "Invalid question id"})
+        question = Question.objects.get(id=question_id)
+        question.title = request.data.get('title')
+        question.description = request.data.get('description')
+        question.start_code_template_file = request.data.get('start_code_template_file')
+        question.save()
+        return Response({"status": True, "message": "Question updated successfully"})
+
+class DeleteQuestionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+
+class DeleteQuestionView(APIView):
+    permission_classes = [IsAdminUser]
+    @extend_schema(
+        request=DeleteQuestionSerializer,
+        responses=MessageSerializer,
+        tags=['Question']
+    )
+    def post(self, request):
+        if not DeleteQuestionSerializer(data=request.data).is_valid():
+            return Response({"status": False, "message": "Invalid data"})
+        question_id = request.data.get('id')
+        if not Question.objects.filter(id=question_id).exists():
+            return Response({"status": False, "message": "Invalid question id"})
+        question = Question.objects.get(id=question_id)
+        question.delete()
+        return Response({"status": True, "message": "Question deleted successfully"})
 
 class SubmitAnswerSerializer(serializers.Serializer):
     question_id = serializers.IntegerField()
@@ -113,6 +164,8 @@ class SubmitAnswerView(APIView):
         question_quota.quota -= 1
         question_quota.save()
         case_num, total_case_num = 1, len(test_cases)
+        # do the non-hidden test cases first
+        test_cases = test_cases.order_by('hidden')
         for test_case in test_cases:
             test_case_input = test_case.input
             test_case_output = test_case.output
