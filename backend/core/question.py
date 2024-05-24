@@ -1,11 +1,12 @@
 import os
 import shutil
 
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import serializers
 from django.conf import settings
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework import serializers
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .models import CustomUser, Question, QuestionQuota, TestCase, SubmitRecord
 from .serializers import MessageSerializer
@@ -65,6 +66,7 @@ class CreateQuestionSerializer(serializers.Serializer):
     start_code_template_file = serializers.FileField()
 
 class CreateQuestionView(APIView):
+    permission_classes = [IsAdminUser]
     @extend_schema(
         request={"multipart/form-data": CreateQuestionSerializer},
         responses=MessageSerializer,
