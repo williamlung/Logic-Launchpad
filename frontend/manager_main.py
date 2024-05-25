@@ -11,12 +11,14 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QSize, Qt
 from api_port import ManageTools
 
-    
+
+APP_NAME = "Logic Launchpad"
+
 class LoginPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        self.setWindowTitle("Questions Manager Login")
+        self.setWindowTitle(f"{APP_NAME} Manager Login")
         self.setFixedSize(QSize(400, 250))
         
         layout = QVBoxLayout(self)
@@ -66,7 +68,7 @@ class MainWindow(QMainWindow):
     def __init__(self, api_loader: ManageTools):
         super().__init__()
         self.api_loader = api_loader
-        self.setWindowTitle("Fuck")
+        self.setWindowTitle(APP_NAME)
         self.setGeometry(100, 100, 1600, 900)
         
         # Central widget
@@ -77,51 +79,34 @@ class MainWindow(QMainWindow):
         main_layout = QHBoxLayout()
         central_widget.setLayout(main_layout)
         
-        # Left panel
-        left_panel = QVBoxLayout()
-        main_layout.addLayout(left_panel, 1)
-        
+        # Questions panel
+        questions_panel = QVBoxLayout()
         top_left_layout = QHBoxLayout()
         self.week_label = QLabel("Week: "+self.api_loader.week)
         self.week_label.setStyleSheet("font-size: 16px")
-        top_left_layout.addWidget(self.week_label, alignment=Qt.AlignLeft)
-        
         self.add_question_button = QPushButton("Add")
         self.add_question_button.clicked.connect(self.add_question)
         self.add_question_button.setFixedWidth(120)
-        top_left_layout.addWidget(self.add_question_button, alignment=Qt.AlignRight)
-        left_panel.addLayout(top_left_layout)
-        
         self.question_list = QListWidget()
-        self.reload_question_list()
+        self.question_list.setWordWrap(True)
         self.question_list.itemClicked.connect(self.select_question)
-        left_panel.addWidget(self.question_list)
+        top_left_layout.addWidget(self.week_label, alignment=Qt.AlignLeft)
+        top_left_layout.addWidget(self.add_question_button, alignment=Qt.AlignRight)
+        questions_panel.addLayout(top_left_layout)
+        questions_panel.addWidget(self.question_list)
+        main_layout.addLayout(questions_panel, 1)
 
-        # Middle panel
+        # Question infomation panel (Title, Description, Start Script)
         question_info_panel = QVBoxLayout()
-        main_layout.addLayout(question_info_panel, 1)
-        
         self.title_label = QLabel("Title:")
         self.title_label.setStyleSheet("font-size: 16px")
-        question_info_panel.addWidget(self.title_label)
-        
         self.title_input = QLineEdit("")
-        question_info_panel.addWidget(self.title_input)
-
         self.description_label = QLabel("Description:")
         self.description_label.setStyleSheet("font-size: 16px")
-        question_info_panel.addWidget(self.description_label)
-        
         self.description_input = QTextEdit("")
-        question_info_panel.addWidget(self.description_input)
-        
         self.script_label = QLabel("Start Script:")
         self.script_label.setStyleSheet("font-size: 16px")
-        question_info_panel.addWidget(self.script_label)
-        
         self.code_script_input = QTextEdit("")
-        question_info_panel.addWidget(self.code_script_input)
-
         action_buttons_layout = QHBoxLayout()
         self.reset_button = QPushButton("Reset")
         self.reset_button.clicked.connect(self.reset_question)
@@ -129,14 +114,20 @@ class MainWindow(QMainWindow):
         self.delete_button.clicked.connect(self.delete_question)
         self.save_button = QPushButton("Save")
         self.save_button.clicked.connect(self.save_question)
+        question_info_panel.addWidget(self.title_label)
+        question_info_panel.addWidget(self.title_input)
+        question_info_panel.addWidget(self.description_label)
+        question_info_panel.addWidget(self.description_input)
+        question_info_panel.addWidget(self.script_label)
+        question_info_panel.addWidget(self.code_script_input)
         action_buttons_layout.addWidget(self.reset_button)
         action_buttons_layout.addWidget(self.delete_button)
         action_buttons_layout.addWidget(self.save_button)
         question_info_panel.addLayout(action_buttons_layout)
+        main_layout.addLayout(question_info_panel, 1)
+
         # Test cases panel
-        test_case_panel = QVBoxLayout()
-        main_layout.addLayout(test_case_panel, 1)
-        
+        test_cases_panel = QVBoxLayout()
         self.test_cases_label = QLabel("Test Cases:")
         self.test_cases_label.setStyleSheet("font-size: 16px")
         test_case_button_layout = QHBoxLayout()
@@ -147,12 +138,6 @@ class MainWindow(QMainWindow):
         self.valid_test_cases_button = QPushButton("Validate")
         self.valid_test_cases_button.clicked.connect(self.valid_test_cases)
         self.valid_test_cases_button.setFixedWidth(90)
-        test_case_panel.addWidget(self.test_cases_label)
-        test_case_button_layout.addWidget(self.test_cases_details_label)
-        test_case_button_layout.addWidget(self.valid_test_cases_button)
-        test_case_button_layout.addWidget(self.add_test_case_button)
-        test_case_panel.addLayout(test_case_button_layout)
-
         self.test_cases_table = QTableWidget(0, 4)
         self.test_cases_table.setHorizontalHeaderLabels(["Input", "Output", "Hidden", "Action"])
         self.test_cases_table.setColumnWidth(0, 120)
@@ -164,24 +149,24 @@ class MainWindow(QMainWindow):
         self.test_cases_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.test_cases_table.setSelectionMode(QTableWidget.NoSelection)
         self.test_cases_table.setFocusPolicy(Qt.NoFocus)
-        test_case_panel.addWidget(self.test_cases_table)
-
         model_answer_label = QLabel("Model Answer:")
         model_answer_label.setStyleSheet("font-size: 16px")
-        test_case_panel.addWidget(model_answer_label)
         self.model_answer_input = QTextEdit()
-        test_case_panel.addWidget(self.model_answer_input)
+        test_case_button_layout.addWidget(self.test_cases_details_label)
+        test_case_button_layout.addWidget(self.valid_test_cases_button)
+        test_case_button_layout.addWidget(self.add_test_case_button)
+        test_cases_panel.addLayout(test_case_button_layout)
+        test_cases_panel.addWidget(self.test_cases_label)
+        test_cases_panel.addWidget(self.test_cases_table)
+        test_cases_panel.addWidget(model_answer_label)
+        test_cases_panel.addWidget(self.model_answer_input)
+        main_layout.addLayout(test_cases_panel, 1)
 
-        # Right panel
-        right_panel = QVBoxLayout()
-        main_layout.addLayout(right_panel, 1)
-        
+        # Users panel
+        users_panel = QVBoxLayout()
         self.create_user_button = QPushButton("Create User")
         self.create_user_button.setFixedWidth(120)
         self.create_user_button.clicked.connect(lambda: CreateUserDialog(self).show())
-        right_panel.addWidget(self.create_user_button, alignment=Qt.AlignRight)
-        
-
         self.user_record_table = QTableWidget(0, 4)
         self.user_record_table.setHorizontalHeaderLabels(["Name", "Quota", "Completed", "Last Submit"])
         self.user_record_table.setColumnWidth(0, 120)
@@ -193,13 +178,14 @@ class MainWindow(QMainWindow):
         self.user_record_table.setFocusPolicy(Qt.NoFocus)
         header = self.user_record_table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Fixed)
-        
-        right_panel.addWidget(self.user_record_table)
-        
         self.update_time_label = QLabel("Update time: 04/05/2024 19:32:28")
-        right_panel.addWidget(self.update_time_label, alignment=Qt.AlignLeft)
+        users_panel.addWidget(self.create_user_button, alignment=Qt.AlignRight)
+        users_panel.addWidget(self.user_record_table)
+        users_panel.addWidget(self.update_time_label, alignment=Qt.AlignLeft)
+        main_layout.addLayout(users_panel, 1)
 
-        # select the first question
+        self.load_question_list()
+        # default: select the first question
         if len(self.questions) > 0:
             self.select_question(0)
         else:
@@ -215,7 +201,10 @@ class MainWindow(QMainWindow):
         if type(index) != int:
             index = self.question_list.currentRow()
         qid = self.questions[index]["id"]
-        question_info = self.api_loader.get_question_info(qid)
+        status, question_info = self.api_loader.get_question_info(qid)
+        if not status:
+            QMessageBox.warning(self, "Error", question_info)
+            sys.exit(0)
         self.title_input.setText(question_info["title"])
         self.description_input.setText(question_info["description"])
         script = ""
@@ -224,77 +213,13 @@ class MainWindow(QMainWindow):
         self.code_script_input.setText(script)
         self.question_list.setCurrentRow(index)
         if not "update_userlist_thread" in dir(self):
-            self.auto_update_userlist_thread()
+            self.create_auto_update_userlist_thread()
         self.update_userlist()
         self.update_test_cases_list()
         self.add_test_case_button.setDisabled(False)
         self.title_input.setReadOnly(False)
         self.description_input.setReadOnly(False)
         self.code_script_input.setReadOnly(False)
-
-    def add_test_case(self):
-        self.add_test_case_dialog = AddTestCaseDialog(self, self.questions[self.question_list.currentRow()]["id"])
-        self.add_test_case_dialog.show()
-
-    def update_test_cases_list(self):
-        qid = self.questions[self.question_list.currentRow()]["id"]
-        self.test_cases = self.api_loader.get_test_cases(qid)
-        if self.test_cases is None:
-            QMessageBox.warning(self, "Error", "Unable to connect to server.")
-            sys.exit(0)
-        test_case_for_ui = []
-        for test_case in self.test_cases:
-            input, output = "", ""
-            for n in test_case["input"]:
-                input += n
-            for n in test_case["output"]:
-                output += n
-            test_case_for_ui.append([input, output, str(test_case["hidden"])])
-        self.test_cases_table.setRowCount(len(test_case_for_ui))
-        self.test_cases_table.clearContents()
-        for row, data in enumerate(test_case_for_ui):
-            for col, item in enumerate(data):
-                delete_button = QPushButton("Delete")
-                delete_button.clicked.connect(lambda _, row=row: self.delete_test_case(self.test_cases[row]["id"]))
-                delete_button.setFixedWidth(70)
-                self.test_cases_table.setItem(row, col, QTableWidgetItem(item))
-                self.test_cases_table.setCellWidget(row, 3, delete_button)
-        self.test_cases_details_label.setText(f"Total test cases: {len(self.test_cases)}, Hidden test cases: {sum([1 for data in self.test_cases if data['hidden'] == 'False'])}")
-        if len(self.test_cases) == 0:
-            self.valid_test_cases_button.setDisabled(True)
-        else:
-            self.valid_test_cases_button.setDisabled(False)
-
-    def delete_test_case(self, tid):
-        # ask user confirmation
-        index = self.test_cases_table.currentRow()
-        confirm_delete = QMessageBox.question(self, "Delete", "Are you sure you want to delete the test case?", 
-                                              QMessageBox.Yes | QMessageBox.No)
-        if confirm_delete == QMessageBox.No:
-            return
-        tid = self.test_cases[index]["id"]
-        response = self.api_loader.delete_test_case(tid)
-        if response == None:
-            QMessageBox.warning(self, "Error", "Unable to connect to server.")
-            sys.exit(0)
-        if not response["status"]:
-            QMessageBox.warning(self, "Error", response["message"])
-        self.update_test_cases_list()
-
-    def valid_test_cases(self):
-        qid = self.questions[self.question_list.currentRow()]["id"]
-        code = self.model_answer_input.toPlainText()
-        response = self.api_loader.validate_test_cases(qid, code)
-        if response == None:
-            QMessageBox.warning(self, "Error", "Unable to connect to server.")
-            sys.exit(0)
-        if "status" not in response:
-            QMessageBox.warning(self, "Error", "Unable to validate test cases.")
-            return
-        if not response["status"]:
-            QMessageBox.warning(self, "Error", response["message"])
-        else:
-            QMessageBox.information(self, "Success", response["message"])
 
     def add_question_to_list(self, question, index):
         item = QListWidgetItem()
@@ -311,7 +236,10 @@ class MainWindow(QMainWindow):
         title = "New Question"
         description = "Description will appear here."
         start_code_template = "Start code template will appear here."
-        response = self.api_loader.create_question(title, description, start_code_template)
+        status, response = self.api_loader.create_question(title, description, start_code_template)
+        if not status:
+            QMessageBox.warning(self, "Error", response)
+            sys.exit(0)
         if response["status"]:
             question = {"title": title,
                         "description": description,
@@ -325,7 +253,6 @@ class MainWindow(QMainWindow):
             sys.exit(0)
 
     def delete_question(self):
-        # ask user confirmation
         index = self.question_list.currentRow()
         confirm_delete = QMessageBox.question(self, "Delete", "Are you sure you want to delete question - " + self.questions[index]["title"] + "?", 
                                               QMessageBox.Yes | QMessageBox.No)
@@ -333,7 +260,10 @@ class MainWindow(QMainWindow):
             return
         
         qid = self.questions[index]["id"]
-        response = self.api_loader.delete_question(qid)
+        status, response = self.api_loader.delete_question(qid)
+        if not status:
+            QMessageBox.warning(self, "Error", response)
+            sys.exit(0)
         if not response["status"]:
             QMessageBox.warning(self, "Error", response["message"])
             return
@@ -354,7 +284,10 @@ class MainWindow(QMainWindow):
         if confirm_reset == QMessageBox.No:
             return
         index = self.question_list.currentRow()
-        question_info = self.api_loader.get_question_info(self.questions[index]["id"])
+        status, question_info = self.api_loader.get_question_info(self.questions[index]["id"])
+        if not status:
+            QMessageBox.warning(self, "Error", question_info)
+            sys.exit(0)
         self.title_input.setText(question_info["title"])
         self.description_input.setText(question_info["description"])
         script = ""
@@ -372,34 +305,94 @@ class MainWindow(QMainWindow):
         title = self.title_input.text()
         description = self.description_input.toPlainText()
         script = self.code_script_input.toPlainText()
-        response = self.api_loader.update_question(qid, title, description, script)
+        status, response = self.api_loader.update_question(qid, title, description, script)
+        if not status:
+            QMessageBox.warning(self, "Error", response)
+            sys.exit(0)
         if not response["status"]:
             QMessageBox.warning(self, "Error", response["message"])
-        self.reload_question_list()
+        self.load_question_list()
         self.select_question(index)
 
-    def reload_question_list(self):
-        self.questions = self.api_loader.get_questions()
+    def load_question_list(self):
+        status, self.questions = self.api_loader.get_questions()
+        if not status:
+            QMessageBox.warning(self, "Error", self.questions)
+            sys.exit(0)
         self.question_list.clear()
         question_id = 1
         for question in self.questions:
             self.add_question_to_list(question, question_id)
             question_id += 1
 
-    def auto_update_userlist_thread(self):
-        def auto_update_userlist(window):
-            while True:
-                window.update_userlist()
-                time.sleep(10)
+    def add_test_case(self):
+        self.add_test_case_dialog = AddTestCaseDialog(self, self.questions[self.question_list.currentRow()]["id"])
+        self.add_test_case_dialog.show()
 
-        self.update_userlist_thread = threading.Thread(target=auto_update_userlist, args=(self,))
-        self.update_userlist_thread.start()
+    def update_test_cases_list(self):
+        qid = self.questions[self.question_list.currentRow()]["id"]
+        status, self.test_cases = self.api_loader.get_test_cases(qid)
+        if not status:
+            QMessageBox.warning(self, "Error", self.test_cases)
+            sys.exit(0)
+        test_case_for_ui = []
+        for test_case in self.test_cases:
+            input, output = "", ""
+            for n in test_case["input"]:
+                input += n
+            for n in test_case["output"]:
+                output += n
+            test_case_for_ui.append([input, output, str(test_case["hidden"])])
+        self.test_cases_table.setRowCount(len(test_case_for_ui))
+        self.test_cases_table.clearContents()
+        for row, data in enumerate(test_case_for_ui):
+            for col, item in enumerate(data):
+                delete_button = QPushButton("Delete")
+                delete_button.clicked.connect(lambda _, row=row: self.delete_test_case(self.test_cases[row]["id"]))
+                delete_button.setFixedWidth(70)
+                self.test_cases_table.setItem(row, col, QTableWidgetItem(item))
+                self.test_cases_table.setCellWidget(row, 3, delete_button)
+        self.test_cases_details_label.setText(f"Total test cases: {len(self.test_cases)}, Hidden test cases: {sum([1 for data in self.test_cases if data['hidden'] != False])}")
+        if len(self.test_cases) == 0:
+            self.valid_test_cases_button.setDisabled(True)
+        else:
+            self.valid_test_cases_button.setDisabled(False)
+
+    def delete_test_case(self, tid: int):
+        index = self.test_cases_table.currentRow()
+        confirm_delete = QMessageBox.question(self, "Delete", "Are you sure you want to delete the test case?", 
+                                              QMessageBox.Yes | QMessageBox.No)
+        if confirm_delete == QMessageBox.No:
+            return
+        tid = self.test_cases[index]["id"]
+        status, response = self.api_loader.delete_test_case(tid)
+        if not status:
+            QMessageBox.warning(self, "Error", response)
+            sys.exit(0)
+        if not response["status"]:
+            QMessageBox.warning(self, "Error", response["message"])
+        self.update_test_cases_list()
+
+    def valid_test_cases(self):
+        qid = self.questions[self.question_list.currentRow()]["id"]
+        code = self.model_answer_input.toPlainText()
+        status, response = self.api_loader.validate_test_cases(qid, code)
+        if status is None:
+            QMessageBox.warning(self, "Error", "Unable to connect to server.")
+            sys.exit(0)
+        if "status" not in response:
+            QMessageBox.warning(self, "Error", "Unable to validate test cases.")
+            return
+        if not response["status"]:
+            QMessageBox.warning(self, "Error", response["message"])
+        else:
+            QMessageBox.information(self, "Success", response["message"])
 
     def update_userlist(self):
         qid = self.questions[self.question_list.currentRow()]["id"]
-        userlist = self.api_loader.get_user_list(qid)
-        if userlist is None:
-            QMessageBox.warning(self, "Error", "Unable to connect to server.")
+        status, userlist = self.api_loader.get_user_list(qid)
+        if not status:
+            QMessageBox.warning(self, "Error", userlist)
             sys.exit(0)
         self.user_record_table.setRowCount(len(userlist))
         self.user_record_table.clearContents()
@@ -416,8 +409,19 @@ class MainWindow(QMainWindow):
         now_time_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         self.update_time_label.setText(f"Update time: {now_time_str}")
 
+    def create_auto_update_userlist_thread(self):
+        def auto_update_userlist(window: MainWindow):
+            while True:
+                window.update_userlist()
+                time.sleep(5)
+                if not window.isVisible():
+                    break
+
+        self.update_userlist_thread = threading.Thread(target=auto_update_userlist, args=(self,))
+        self.update_userlist_thread.start()
+
 class AddTestCaseDialog(QMainWindow):
-    def __init__(self, parent: MainWindow, qid):
+    def __init__(self, parent: MainWindow, qid: int):
         super().__init__(parent)
         self.qid = qid
         self.setWindowTitle("Add Test Case")
@@ -494,17 +498,13 @@ class CreateUserDialog(QMainWindow):
         super().__init__(parent)
         self.setWindowTitle("Create User")
         self.setFixedSize(QSize(400, 250))
-        
         layout = QVBoxLayout()
         self.setCentralWidget(QWidget())
         self.centralWidget().setLayout(layout)
-        
         self.username_label = QLabel("Username:")
         self.username_input = QLineEdit()
-
         self.password_label = QLabel("Password:")
         self.password_input = QLineEdit()
-
         self.create_button = QPushButton("Create")
         self.create_button.setFixedWidth(150)
         self.create_button.clicked.connect(self.create_user)
@@ -518,8 +518,8 @@ class CreateUserDialog(QMainWindow):
     def create_user(self):
         username = self.username_input.text()
         password = self.password_input.text()
-        response = self.parent().api_loader.create_user(username, password)
-        if response is None:
+        status, response = self.parent().api_loader.create_user(username, password)
+        if status is None:
             QMessageBox.warning(self, "Error", "Unable to connect to server.")
             sys.exit(0)
         if not response["status"]:
@@ -533,7 +533,6 @@ class LoginWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Login")
         self.setFixedSize(QSize(400, 250))
-        
         self.login_page = LoginPage(self)
         self.setCentralWidget(self.login_page)
         

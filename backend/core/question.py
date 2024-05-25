@@ -139,7 +139,7 @@ class DeleteQuestionView(APIView):
 
 class SubmitAnswerSerializer(serializers.Serializer):
     question_id = serializers.IntegerField()
-    answer = serializers.FileField()
+    answer = serializers.FileField(allow_empty_file=True)
 
 class SubmitAnswerView(APIView):
     @extend_schema(
@@ -161,6 +161,8 @@ class SubmitAnswerView(APIView):
         answer_code = submit_record.answer
         answer_code = answer_code.read().replace(b'\r\n', b'\n').decode('utf-8')
         question_quota = QuestionQuota.objects.get(user=request.user, question=question)
+        if question_quota.quota == 0:
+            return Response({"status": False, "message": "You have no quota left for this question"})
         question_quota.quota -= 1
         question_quota.save()
         case_num, total_case_num = 1, len(test_cases)
