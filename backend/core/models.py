@@ -13,11 +13,12 @@ class Question(models.Model):
 class QuestionQuota(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    quota = models.IntegerField(default=40)
+    quota = models.IntegerField(default=80)
     passed = models.BooleanField(default=False)
 
 class SubmitRecord(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
     answer = models.FileField(upload_to='answers')
     created_at = models.DateTimeField(auto_now_add=True)
     

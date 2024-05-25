@@ -1,5 +1,5 @@
 from django.utils.timezone import localtime
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import serializers
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
@@ -7,9 +7,6 @@ from rest_framework.views import APIView
 
 from .models import CustomUser, Question, QuestionQuota
 from .serializers import MessageSerializer
-
-class GetUserQuestionInfoSerializer(serializers.Serializer):
-    question = serializers.IntegerField()
 
 class ResponseUserQuestionInfoSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -20,20 +17,26 @@ class ResponseUserQuestionInfoSerializer(serializers.Serializer):
 class GetUserQuestionInfoView(APIView):
     permission_classes = [IsAdminUser]
     @extend_schema(
-        request=GetUserQuestionInfoSerializer,
+        parameters=[OpenApiParameter(name='question_id', type=int)],
         responses=ResponseUserQuestionInfoSerializer(many=True),
         tags=['User']
     )
-    def get(request):
-        if not GetUserQuestionInfoSerializer(data=request.data).is_valid():
-            return Response({"status": False, "message": "Invalid data"})
-        question = request.data.get('question')
+    def get(self, request):
+        question_id = request.query_params.get('question_id')
+        if not Question.objects.filter(id=question_id).exists():
+            return Response({"status": False, "message": "Invalid question id"})
+        question = Question.objects.get(id=question_id)
         all_users = CustomUser.objects.all()
         return_users = []
         for user in all_users:
             user_info = {}
             qq = QuestionQuota.objects.get(user=user, question=question)
-            time = localtime(qq.last_submit_time)
+            submit_records = user.submitrecord_set.filter(question=question)
+            if submit_records.exists():
+                time = submit_records.latest('created_at').created_at
+                time = localtime(time).strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                time = "N/A"
             user_info['username'] = user.username
             user_info['quota'] = qq.quota
             user_info['finished'] = qq.passed
@@ -76,7 +79,6 @@ class UpdateUserSerializer(serializers.Serializer):
     password = serializers.CharField()
 
 class UpdateUserView(APIView):
-    permission_classes = [IsAdminUser]
     @extend_schema(
         request=UpdateUserSerializer,
         responses=MessageSerializer,
@@ -89,6 +91,8 @@ class UpdateUserView(APIView):
             username = request.data.get('username')
             if not CustomUser.objects.filter(username=username).exists():
                 return Response({"status": False, "message": "User does not exist"})
+            if request.user.username != username and not request.user.is_superuser:
+                return Response({"status": False, "message": "You can only update your own password"})
             password = request.data.get('password')
             user = CustomUser.objects.get(username=username)
             user.set_password(password)

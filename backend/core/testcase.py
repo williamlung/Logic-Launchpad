@@ -33,7 +33,6 @@ class CreateTestCaseView(APIView):
             input = request.data.get('input')
             output = request.data.get('output')
             hidden = request.data.get('hidden')
-            hidden = True if hidden == 'true' else False
             question = Question.objects.get(id=question_id)
             test_case = TestCase(question=question, input=input, output=output, hidden=hidden)
             test_case.save()
@@ -42,7 +41,7 @@ class CreateTestCaseView(APIView):
             traceback.print_exc()
             return Response({"status": False, "message": "Unable to create test case, please contact admin"})
 
-class TestCaseSerializer(serializers.ModelSerializer):
+class ResponseTestCaseSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     input = serializers.CharField()
     output = serializers.CharField()
@@ -52,7 +51,7 @@ class GetTestCaseView(APIView):
     permission_classes = [IsAdminUser]
     @extend_schema(
         parameters=[OpenApiParameter(name='question_id', type=int)],
-        responses=TestCaseSerializer(many=True),
+        responses=ResponseTestCaseSerializer(many=True),
         tags=['TestCase']
     )
     def get(self, request):
@@ -61,6 +60,7 @@ class GetTestCaseView(APIView):
             if not Question.objects.filter(id=question_id).exists():
                 return Response({"status": False, "message": "Invalid question id"})
             test_cases = TestCase.objects.filter(question_id=question_id)
+            test_cases = test_cases.order_by('hidden')
             return_data = []
             for test_case in test_cases:
                 return_data.append({
@@ -73,3 +73,22 @@ class GetTestCaseView(APIView):
         except:
             traceback.print_exc()
             return Response({"status": False, "message": "Unable to get test cases, please contact admin"})
+
+class DeleteTestCaseView(APIView):
+    permission_classes = [IsAdminUser]
+    @extend_schema(
+        parameters=[OpenApiParameter(name='test_case_id', type=int)],
+        responses=MessageSerializer,
+        tags=['TestCase']
+    )
+    def delete(self, request):
+        try:
+            test_case_id = request.query_params.get('test_case_id')
+            if not TestCase.objects.filter(id=test_case_id).exists():
+                return Response({"status": False, "message": "Invalid test case id"})
+            test_case = TestCase.objects.get(id=test_case_id)
+            test_case.delete()
+            return Response({"status": True, "message": "Test case deleted successfully"})
+        except:
+            traceback.print_exc()
+            return Response({"status": False, "message": "Unable to delete test case, please contact admin"})

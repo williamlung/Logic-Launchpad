@@ -78,11 +78,11 @@ class ManageTools:
                 'question_id': question_id,
                 'hidden': hidden
             }
-            response = requests.post(url, headers=headers, data=data, files=files)
-            print(response.json())
+            response = requests.post(url, headers=headers, data=data, files=files).json()
+            return response
         except:
             traceback.print_exc()
-            print("Unable to create test case")
+            return None
     
     def create_question(self, title: str, description: str, start_code_template: str):
         try:
@@ -98,11 +98,11 @@ class ManageTools:
                 'description': description,
                 'week': self.week
             }
-            response = requests.post(url, headers=headers, data=data, files=files)
-            return response.json()
+            response = requests.post(url, headers=headers, data=data, files=files).json()
+            return response
         except:
             traceback.print_exc()
-            print("Unable to create question")
+            return None
 
     def get_questions(self):
         try:
@@ -110,11 +110,11 @@ class ManageTools:
             headers = {
                 'Authorization': f'Bearer {self.access_token}'
             }
-            response = requests.get(url, headers=headers)
-            return response.json()
+            response = requests.get(url, headers=headers).json()
+            return response
         except:
             traceback.print_exc()
-            print("Unable to get questions")
+            return None
 
     def get_question_info(self, question_id):
         try:
@@ -125,11 +125,11 @@ class ManageTools:
             params = {
                 'id': question_id
             }
-            response = requests.get(url, headers=headers, params=params)
-            return response.json()
+            response = requests.get(url, headers=headers, params=params).json()
+            return response
         except:
             traceback.print_exc()
-            print("Unable to get question info")
+            return None
     
     def delete_question(self, question_id):
         try:
@@ -140,11 +140,11 @@ class ManageTools:
             data = {
                 'id': question_id
             }
-            response = requests.post(url, headers=headers, data=data)
-            return response.json()
+            response = requests.post(url, headers=headers, data=data).json()
+            return response
         except:
             traceback.print_exc()
-            print("Unable to delete question")
+            return None
 
     def update_question(self, question_id, title, description, start_code_template):
         try:
@@ -160,11 +160,11 @@ class ManageTools:
                 'title': title,
                 'description': description
             }
-            response = requests.post(url, headers=headers, data=data, files=files)
-            return response.json()
+            response = requests.post(url, headers=headers, data=data, files=files).json()
+            return response
         except:
             traceback.print_exc()
-            print("Unable to update question")
+            return None
     
     def get_test_cases(self, qid):
         try:
@@ -175,8 +175,77 @@ class ManageTools:
             params = {
                 'question_id': qid
             }
-            response = requests.get(url, headers=headers, params=params)
-            return response.json()
+            response = requests.get(url, headers=headers, params=params).json()
+            return response
         except:
             traceback.print_exc()
-            print("Unable to get test cases")
+            return None
+    
+    def delete_test_case(self, tid):
+        try:
+            url = "http://"+self.url+"/api/delete/testcase/"
+            headers = {
+                'Authorization': f'Bearer {self.access_token}'
+            }
+            params = {
+                'test_case_id': tid
+            }
+            response = requests.delete(url, headers=headers, params=params).json()
+            return response
+        except:
+            traceback.print_exc()
+            return None
+
+    def validate_test_cases(self, qid, code):
+        try:
+            url = "http://"+self.url+"/api/validate/testcases/"
+            headers = {
+                'Authorization': f'Bearer {self.access_token}'
+            }
+            data = {
+                'question_id': qid,
+            }
+            files = {
+                'code': StringIO(code)
+            }
+            response = requests.post(url, headers=headers, data=data, files=files).json()
+            return response
+        except:
+            traceback.print_exc()
+            return None
+    
+    def get_user_list(self, qid):
+        try:
+            url = "http://"+self.url+"/api/get/userlist/"
+            headers = {
+                'Authorization': f'Bearer {self.access_token}'
+            }
+            params = {
+                'question_id': qid
+            }
+            response = requests.get(url, headers=headers, params=params).json()
+            return response
+        except:
+            traceback.print_exc()
+            return None
+
+    def create_user(self, username, password):
+        try:
+            url = "http://"+self.url+"/api/create/user/"
+            headers = {
+                'Authorization': f'Bearer {self.access_token}'
+            }
+            data = {
+                'username': username,
+                'password': password
+            }
+            response = requests.post(url, headers=headers, data=data).json()
+            return response
+        except:
+            traceback.print_exc()
+            return None
+        
+if __name__ == "__main__":
+    manager = ManageTools("localhost:8000", 1)
+    manager.login("abc", "abc")
+    print(manager.create_test_case(1, "", "", False))

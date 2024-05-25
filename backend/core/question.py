@@ -153,8 +153,8 @@ class SubmitAnswerView(APIView):
         question_id = request.data.get('question_id')
         if not Question.objects.filter(id=question_id).exists():
             return Response({"status": False, "message": "Invalid question id"})
-        submit_record = SubmitRecord.objects.create(user=request.user, answer=request.data.get('answer'))
         question = Question.objects.get(id=question_id)
+        submit_record = SubmitRecord.objects.create(user=request.user, answer=request.data.get('answer'), question=question)
         test_cases = TestCase.objects.filter(question=question)
         if len(test_cases) == 0:
             return Response({"status": True, "message": "No test cases to run"})
@@ -174,14 +174,51 @@ class SubmitAnswerView(APIView):
             docker_answer = run_code_in_docker(answer_code, test_case_input)
             if docker_answer["status"]:
                 if docker_answer["answer"] != test_case_output and not test_case.hidden:
-                    return Response({"status": True, "message": f"Test case failed in {case_num}/{total_case_num}", "expected_output": test_case_output, "user_output": docker_answer["answer"]})
+                    return Response({"status": True, "message": f"Test case failed in {case_num}/{total_case_num}\nInput:{test_case_input}\nExpected output:{test_case_output}\nYour output:{docker_answer['answer']}"})
                 elif docker_answer["answer"] != test_case_output and test_case.hidden:
-                    return Response({"status": True, "message": "Test case failed in hidden case, good luck", "expected_output": "", "user_output": ""})
+                    return Response({"status": True, "message": "Test case failed in hidden case{case_num}/{total_case_num}, good luck"})
             else:
-                return Response({"status": False, "message": f"Test case failed in {case_num}/{total_case_num}", "error": docker_answer["message"]})
+                return Response({"status": False, "message": f"Test case failed in {case_num}/{total_case_num},\n Error: {docker_answer['message']}"})
             case_num += 1
         question_quota.passed = True
         question_quota.save()
+        return Response({"status": True, "message": "All test cases passed"})
+
+class ValidateTestCasesSerializer(serializers.Serializer):
+    question_id = serializers.IntegerField()
+    code = serializers.FileField(allow_empty_file=True)
+
+class ValidateTestCasesView(APIView):
+    permission_classes = [IsAdminUser]
+    @extend_schema(
+        request=ValidateTestCasesSerializer,
+        responses=MessageSerializer,
+        tags=['Question']
+    )
+    def post(self, request):
+        this_serializer = ValidateTestCasesSerializer(data=request.data)
+        if not this_serializer.is_valid():
+            return Response({"status": False, "message": "Invalid data: "+str(this_serializer.errors)})
+        question_id = request.data.get('question_id')
+        if not Question.objects.filter(id=question_id).exists():
+            return Response({"status": False, "message": "Invalid question id"})
+        question = Question.objects.get(id=question_id)
+        test_cases = TestCase.objects.filter(question=question)
+        answer_code = request.data.get('code')
+        answer_code = answer_code.read().replace(b'\r\n', b'\n').decode('utf-8')
+        case_num, total_case_num = 1, len(test_cases)
+        for test_case in test_cases:
+            test_case_input = test_case.input
+            test_case_output = test_case.output
+            test_case_input = test_case_input.read().replace(b'\r\n', b'\n').decode('utf-8')
+            test_case_output = test_case_output.read().replace(b'\r\n', b'\n').decode('utf-8')
+            docker_answer = run_code_in_docker(answer_code, test_case_input)
+            if docker_answer["status"]:
+                if docker_answer["answer"] != test_case_output:
+                    return Response({"status": True, "message": f"Test case failed in {case_num}/{total_case_num}\nInput:{test_case_input}\nExpected output:{test_case_output}\nYour output:{docker_answer['answer']}"})
+            else:
+                return Response({"status": False, "message": f"Test case failed in {case_num}/{total_case_num},\n Error: {docker_answer['message']}"})
+            case_num += 1
         return Response({"status": True, "message": "All test cases passed"})
 
 def run_code_in_docker(answer_code:str, test_case_input:str) -> str:
