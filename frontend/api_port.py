@@ -58,17 +58,51 @@ class ManageTools:
             response = requests.post(url, data=data).json()
             if "access" in response:
                 self.access_token = response['access']
+                self.refresh_token = response['refresh']
                 return True, "Login successful."
             else:
                 return False, "Invalid username or password."
         except:
             return False, "Unable to connect to server."
         
+    def valid_token(self, token):
+        try:
+            url = "http://"+self.url+"/api/token/verify/"
+            data = {
+                'token': token
+            }
+            response = requests.post(url, data=data)
+            if response.status_code == 200:
+                return True
+            else:
+                return False
+        except:
+            traceback.print_exc()
+            return False
+        
+    def get_access_toekn(self):
+        if self.valid_token(self.access_token):
+            return 'Bearer ' + self.access_token
+        else:
+            if self.valid_token(self.refresh_token):
+                url = "http://"+self.url+"/api/token/refresh/"
+                data = {
+                    'refresh': self.refresh_token
+                }
+                response = requests.post(url, data=data).json()
+                if "access" in response:
+                    self.access_token = response['access']
+                    return 'Bearer ' + self.access_token
+                else:
+                    return None
+            else:
+                return None
+
     def create_test_case(self, question_id: int, input: str, output: str, hidden: bool):
         try:
             url = "http://"+self.url+"/api/create/testcase/"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             files = {
                 'input': StringIO(input),
@@ -88,7 +122,7 @@ class ManageTools:
         try:
             url = "http://"+self.url+"/api/create/question/"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             files = {
                 'start_code_template_file': StringIO(start_code_template)
@@ -108,7 +142,7 @@ class ManageTools:
         try:
             url = "http://"+self.url+f"/api/get/questions/{self.week}"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             response = requests.get(url, headers=headers).json()
             return response
@@ -120,7 +154,7 @@ class ManageTools:
         try:
             url = "http://"+self.url+"/api/get/question/"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             params = {
                 'id': question_id
@@ -135,7 +169,7 @@ class ManageTools:
         try:
             url = "http://"+self.url+"/api/delete/question/"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             data = {
                 'id': question_id
@@ -150,7 +184,7 @@ class ManageTools:
         try:
             url = "http://"+self.url+"/api/update/question/"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             files = {
                 'start_code_template_file': StringIO(start_code_template)
@@ -170,7 +204,7 @@ class ManageTools:
         try:
             url = "http://"+self.url+"/api/get/testcases/"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             params = {
                 'question_id': qid
@@ -185,7 +219,7 @@ class ManageTools:
         try:
             url = "http://"+self.url+"/api/delete/testcase/"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             params = {
                 'test_case_id': tid
@@ -200,7 +234,7 @@ class ManageTools:
         try:
             url = "http://"+self.url+"/api/validate/testcases/"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             data = {
                 'question_id': qid,
@@ -218,7 +252,7 @@ class ManageTools:
         try:
             url = "http://"+self.url+"/api/get/userlist/"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             params = {
                 'question_id': qid
@@ -233,7 +267,7 @@ class ManageTools:
         try:
             url = "http://"+self.url+"/api/create/user/"
             headers = {
-                'Authorization': f'Bearer {self.access_token}'
+                'Authorization': self.get_access_toekn()
             }
             data = {
                 'username': username,

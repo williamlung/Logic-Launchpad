@@ -398,6 +398,9 @@ class MainWindow(QMainWindow):
     def update_userlist(self):
         qid = self.questions[self.question_list.currentRow()]["id"]
         userlist = self.api_loader.get_user_list(qid)
+        if userlist is None:
+            QMessageBox.warning(self, "Error", "Unable to connect to server.")
+            sys.exit(0)
         self.user_record_table.setRowCount(len(userlist))
         self.user_record_table.clearContents()
         for user_info in userlist:
@@ -515,7 +518,6 @@ class CreateUserDialog(QMainWindow):
     def create_user(self):
         username = self.username_input.text()
         password = self.password_input.text()
-        print(self.parent().api_loader.access_token)
         response = self.parent().api_loader.create_user(username, password)
         if response is None:
             QMessageBox.warning(self, "Error", "Unable to connect to server.")
