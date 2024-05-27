@@ -7,12 +7,12 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QKeySequence
 from api_port import API_Loader
 
-APP_NAME = "Logic Launchpad"
+APP_NAME = "Logic Launchpad (Client)"
 TITLE_FONT_SIZE = 20
-SMALL_TITLE_FONT_SIZE = 16
-DESCRIPTION_FONT_SIZE = 14
-ANSWER_FONT_SIZE = 14
-RESULT_FONT_SIZE = 14
+SMALL_TITLE_FONT_SIZE = 18
+DESCRIPTION_FONT_SIZE = 16
+ANSWER_FONT_SIZE = 16
+RESULT_FONT_SIZE = 16
 
 class NoPasteTextEdit(QTextEdit):
     def __init__(self, parent=None):
@@ -147,14 +147,17 @@ class MainWindow(QMainWindow):
         self.question_info_list = []
         if questions is not None:
             qid = 1
+            all_finished = True
             for question in questions:
                 title = str(qid) + ". " + question["title"]
                 self.question_list_ui.addItem(title)
                 self.question_info_list.append(question)
                 qid += 1
-        else:
-            QMessageBox.warning(self, "Error", "Unable to connect to server.")
-            sys.exit(0)
+                if not question["finished"]:
+                    all_finished = False
+                    
+        if all_finished:
+            QMessageBox.information(self, "Congratulations!", "You have finished all questions this week.")
 
     def load_question_info(self, current_item):
         q_index = int(current_item.text().split(".")[0]) - 1
@@ -162,20 +165,34 @@ class MainWindow(QMainWindow):
         status, question_info = self.api_loader.get_question_info(question_info["id"])
         if not status:
             QMessageBox.warning(self, "Error", "Unable to connect to server.")
-            return
+            sys.exit(0)
         self.question_info_list[q_index]["quota"] = question_info["quota"]
         question_title = question_info["title"]
         question_description = question_info["description"]
         self.quota_label.setText(f"Quota: {question_info['quota']}")
         self.answer_text.clear()
+        self.result_text.clear()
         script = ""
         for line in question_info["start_code_template_file"]:
             script += line
         self.answer_text.setText(script)
+        self.answer_text.setReadOnly(False)
         self.question_title.setText(question_title)
         self.question_description.setText(question_description)
         self.question_list_ui.setCurrentRow(q_index)
-        if self.question_info_list[q_index]["quota"] == 0 or self.question_info_list[q_index]["finished"]:
+        if self.question_info_list[q_index]["quota"] == 0:
+            self.answer_text.setReadOnly(True)
+            self.submit_button.setDisabled(True)
+        elif self.question_info_list[q_index]["finished"]:
+            status, result = self.api_loader.get_last_submit_answer(self.question_info_list[q_index]["id"])
+            if not status:
+                QMessageBox.warning(self, "Error", "Unable to connect to server.")
+                sys.exit(0)
+            answer = ""
+            for line in result["answer"]:
+                answer += line
+            self.answer_text.setText(answer)
+            self.answer_text.setReadOnly(True)
             self.submit_button.setDisabled(True)
             self.quota_label.setText("You have already finished this question.")
         else:
@@ -189,16 +206,27 @@ class MainWindow(QMainWindow):
         status, result = self.api_loader.submit_answer(qid, answer)
         if not status:
             QMessageBox.warning(self, "Error", "Unable to connect to server.")
-            return
+            sys.exit(0)
         self.question_info_list[ui_qid]['quota'] -= 1
         self.quota_label.setText(f"Quota: {self.question_info_list[ui_qid]['quota']}")
         if not result["status"]:
-            self.result_text.setText(result["message"])
-            self.submit_button.setDisabled(False)
+            if self.question_info_list[ui_qid]['quota'] == 0:
+                self.answer_text.setReadOnly(True)
+                self.submit_button.setDisabled(True)
+                QMessageBox.warning(self, "Wrong answer!", "You have no more quota to try. Good bye!")
+            else:
+                QMessageBox.warning(self, "Wrong answer!", "You still have "+str(self.question_info_list[ui_qid]['quota'])+" times to try.")
+                self.result_text.setText(result["message"])
+                self.submit_button.setDisabled(False)
         else:
             QMessageBox.information(self, "Congratulations!", "You have successfully finished the question.")
             self.question_info_list[ui_qid]["finished"] = True
             self.quota_label.setText("You have already finished this question.")
+            self.answer_text.setReadOnly(True)
+            self.result_text.setText(result["message"])
+            # check all questions are finished
+            if all([question["finished"] for question in self.question_info_list]):
+                QMessageBox.information(self, "Congratulations!", "You have finished all questions this week.")
         
 
 class LoginWindow(QMainWindow):

@@ -12,13 +12,13 @@ from PySide6.QtCore import QSize, Qt
 from api_port import ManageTools
 
 
-APP_NAME = "Logic Launchpad"
+APP_NAME = "Logic Launchpad (Manager)"
 
 class LoginPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        self.setWindowTitle(f"{APP_NAME} Manager Login")
+        self.setWindowTitle(f"{APP_NAME} Login")
         self.setFixedSize(QSize(400, 250))
         
         layout = QVBoxLayout(self)

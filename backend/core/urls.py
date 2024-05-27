@@ -5,7 +5,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     GetQuestionListView, CreateQuestionView, CreateUserView, GetQuestionView, 
     SubmitAnswerView, CreateTestCaseView, UpdateQuestionView, DeleteQuestionView,
-    GetTestCaseView, DeleteTestCaseView, ValidateTestCasesView, GetUserQuestionInfoView
+    GetTestCaseView, DeleteTestCaseView, ValidateTestCasesView, GetUserQuestionInfoView,
+    getQuestionAnswerView
 )
 urlpatterns = [
     # Auth
@@ -24,6 +25,7 @@ urlpatterns = [
     path('delete/question/', DeleteQuestionView.as_view(), name='delete_question'),
     path('submit/answer/', SubmitAnswerView.as_view(), name='submit_answer'),
     path('validate/testcases/', ValidateTestCasesView.as_view(), name='validate_testcases'),
+    path('get/question/answer/', getQuestionAnswerView.as_view(), name='get_question_answer'),
     # TestCase
     path('create/testcase/', CreateTestCaseView.as_view(), name='create_testcase'),
     path('get/testcases/', GetTestCaseView.as_view(), name='get_testcases'),

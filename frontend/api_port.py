@@ -21,6 +21,7 @@ class API_Loader:
             else:
                 return False, "Invalid username or password."
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
 
     def valid_token(self, token: str):
@@ -35,6 +36,7 @@ class API_Loader:
             else:
                 return False
         except:
+            traceback.print_exc()
             return False
 
     def get_access_token(self):
@@ -65,6 +67,7 @@ class API_Loader:
             response = requests.get(url, headers=headers).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, None
     
     def get_question_info(self, question_id: int):
@@ -80,6 +83,7 @@ class API_Loader:
             response = requests.get(url, headers=headers, params=params).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, None
     
     def submit_answer(self, question_id: int, answer: str):
@@ -98,6 +102,23 @@ class API_Loader:
             response = requests.post(url, headers=headers, data=data, files=files).json()
             return True, response
         except:
+            traceback.print_exc()
+            return False, None
+    
+    def get_last_submit_answer(self, question_id: int):
+        try:
+            token = self.get_access_token()
+            if token is None:
+                return False, "Please login again."
+            url = "http://" + self.url + "/api/get/question/answer/"
+            headers = {'Authorization': token}
+            params = {
+                "question_id": question_id
+            }
+            response = requests.get(url, headers=headers, params=params).json()
+            return True, response
+        except:
+            traceback.print_exc()
             return False, None
         
 class ManageTools:
@@ -120,6 +141,7 @@ class ManageTools:
             else:
                 return False, "Invalid username or password."
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
         
     def valid_token(self, token: str):
@@ -175,6 +197,7 @@ class ManageTools:
             response = requests.post(url, headers=headers, data=data, files=files).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
     
     def create_question(self, title: str, description: str, start_code_template: str):
@@ -197,6 +220,7 @@ class ManageTools:
             response = requests.post(url, headers=headers, data=data, files=files).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
 
     def get_questions(self):
@@ -211,6 +235,7 @@ class ManageTools:
             response = requests.get(url, headers=headers).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
 
     def get_question_info(self, question_id):
@@ -228,6 +253,7 @@ class ManageTools:
             response = requests.get(url, headers=headers, params=params).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
     
     def delete_question(self, question_id):
@@ -245,6 +271,7 @@ class ManageTools:
             response = requests.post(url, headers=headers, data=data).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
 
     def update_question(self, question_id, title, description, start_code_template):
@@ -267,6 +294,7 @@ class ManageTools:
             response = requests.post(url, headers=headers, data=data, files=files).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
     
     def get_test_cases(self, qid):
@@ -284,6 +312,7 @@ class ManageTools:
             response = requests.get(url, headers=headers, params=params).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
     
     def delete_test_case(self, tid):
@@ -301,6 +330,7 @@ class ManageTools:
             response = requests.delete(url, headers=headers, params=params).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
 
     def validate_test_cases(self, qid, code):
@@ -321,6 +351,7 @@ class ManageTools:
             response = requests.post(url, headers=headers, data=data, files=files).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
     
     def get_user_list(self, qid):
@@ -338,6 +369,7 @@ class ManageTools:
             response = requests.get(url, headers=headers, params=params).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
 
     def create_user(self, username, password):
@@ -356,9 +388,22 @@ class ManageTools:
             response = requests.post(url, headers=headers, data=data).json()
             return True, response
         except:
+            traceback.print_exc()
             return False, "Unable to connect to server."
         
 if __name__ == "__main__":
     manager = ManageTools("localhost:8000", 1)
     manager.login("abc", "abc")
-    print(manager.create_test_case(1, "", "", False))
+    manager.create_question("The start of your programming journey", "You just need to enter submit button.", "int main() {\n    return 0;\n}\n")
+    manager.create_test_case(1, "on99", "", True)
+    manager.create_test_case(1, "", "", True)
+    manager.create_test_case(1, "1222", "", False)
+    manager.create_test_case(1, "555667", "", False)
+    manager.create_test_case(1, "235236326", "", False)
+    manager.create_test_case(1, "dfsjnigifsdgjofds", "", False)
+    manager.create_test_case(1, "你好成功", "", False)
+
+    manager.create_question("Say Hello to the World!", "Please try to print 'Hello World!'", "int main() {\n    // write your code here!\n    return 0;\n}\n")
+    manager.create_test_case(2, "", "Hello World!", False)
+    manager.create_test_case(2, "ggdfh", "Hello World!", True)
+    manager.create_test_case(2, "dfhdfhdh", "Hello World!", True)
