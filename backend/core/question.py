@@ -156,8 +156,6 @@ class SubmitAnswerView(APIView):
         question = Question.objects.get(id=question_id)
         submit_record = SubmitRecord.objects.create(user=request.user, answer=request.data.get('answer'), question=question)
         test_cases = TestCase.objects.filter(question=question)
-        if len(test_cases) == 0:
-            return Response({"status": True, "message": "No test cases to run"})
         answer_code = submit_record.answer
         answer_code = answer_code.read().replace(b'\r\n', b'\n').decode('utf-8')
         question_quota = QuestionQuota.objects.get(user=request.user, question=question)

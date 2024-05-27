@@ -198,6 +198,7 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.information(self, "Congratulations!", "You have successfully finished the question.")
             self.question_info_list[ui_qid]["finished"] = True
+            self.quota_label.setText("You have already finished this question.")
         
 
 class LoginWindow(QMainWindow):
