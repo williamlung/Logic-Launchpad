@@ -1,4 +1,6 @@
+from django.http import JsonResponse
 from django.utils.timezone import localtime
+from django.shortcuts import render
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import serializers
 from rest_framework.permissions import IsAdminUser
@@ -123,3 +125,26 @@ class DeleteUserView(APIView):
             return Response({"status": True, "message": "User deleted successfully"})
         except:
             return Response({"status": False, "message": "Unable to delete user, please contact admin"})
+        
+def reset_password(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        if not CustomUser.objects.filter(username=username).exists():
+            return JsonResponse({'success': False, 'message': 'User does not exist'})
+        
+        user = CustomUser.objects.get(username=username)
+        password = request.POST.get('password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if not user.check_password(password):
+            return JsonResponse({'success': False, 'message': 'Invalid password'})
+        
+        if new_password != confirm_password:
+            return JsonResponse({'success': False, 'message': 'New passwords do not match'})
+        
+        user.set_password(new_password)
+        user.save()
+        return JsonResponse({'success': True, 'message': 'Password reset successfully'})
+    
+    return render(request, 'reset_password.html')
