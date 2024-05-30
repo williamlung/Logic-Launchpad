@@ -13,7 +13,7 @@ class API_Loader:
                 "username": username,
                 "password": password
             }
-            response = requests.post(url, data=data).json()
+            response = requests.post(url, data=data, timeout=10).json()
             if "access" in response:
                 self.access_token = response["access"]
                 self.refresh_token = response["refresh"]
@@ -30,7 +30,7 @@ class API_Loader:
             data = {
                 "token": token
             }
-            response = requests.post(url, data=data)
+            response = requests.post(url, data=data, timeout=10)
             if response.status_code == 200:
                 return True
             else:
@@ -48,7 +48,7 @@ class API_Loader:
                 data = {
                     "refresh": self.refresh_token
                 }
-                response = requests.post(url, data=data).json()
+                response = requests.post(url, data=data, timeout=10).json()
                 if "access" in response:
                     self.access_token = response["access"]
                     return 'Bearer ' + self.access_token
@@ -64,7 +64,7 @@ class API_Loader:
                 return False, "Please login again."
             url = "http://" + self.url + "/api/get/questions/"
             headers = {'Authorization': token}
-            response = requests.get(url, headers=headers).json()
+            response = requests.get(url, headers=headers, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -80,7 +80,7 @@ class API_Loader:
             params = {
                 "id": question_id
             }
-            response = requests.get(url, headers=headers, params=params).json()
+            response = requests.get(url, headers=headers, params=params, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -99,7 +99,7 @@ class API_Loader:
             files = {
                 "answer": StringIO(answer)
             }
-            response = requests.post(url, headers=headers, data=data, files=files).json()
+            response = requests.post(url, headers=headers, data=data, files=files, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -115,7 +115,7 @@ class API_Loader:
             params = {
                 "question_id": question_id
             }
-            response = requests.get(url, headers=headers, params=params).json()
+            response = requests.get(url, headers=headers, params=params, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -133,7 +133,7 @@ class ManageTools:
                 'username': username,
                 'password': password
             }
-            response = requests.post(url, data=data).json()
+            response = requests.post(url, data=data, timeout=10).json()
             if "access" in response:
                 self.access_token = response['access']
                 self.refresh_token = response['refresh']
@@ -150,7 +150,7 @@ class ManageTools:
             data = {
                 'token': token
             }
-            response = requests.post(url, data=data)
+            response = requests.post(url, data=data, timeout=10)
             if response.status_code == 200:
                 return True
             else:
@@ -194,7 +194,7 @@ class ManageTools:
                 'question_id': question_id,
                 'hidden': hidden
             }
-            response = requests.post(url, headers=headers, data=data, files=files).json()
+            response = requests.post(url, headers=headers, data=data, files=files, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -217,7 +217,7 @@ class ManageTools:
                 'description': description,
                 'week': self.week
             }
-            response = requests.post(url, headers=headers, data=data, files=files).json()
+            response = requests.post(url, headers=headers, data=data, files=files, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -232,7 +232,7 @@ class ManageTools:
             headers = {
                 'Authorization': token
             }
-            response = requests.get(url, headers=headers).json()
+            response = requests.get(url, headers=headers, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -250,7 +250,7 @@ class ManageTools:
             params = {
                 'id': question_id
             }
-            response = requests.get(url, headers=headers, params=params).json()
+            response = requests.get(url, headers=headers, params=params, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -268,7 +268,7 @@ class ManageTools:
             data = {
                 'id': question_id
             }
-            response = requests.post(url, headers=headers, data=data).json()
+            response = requests.post(url, headers=headers, data=data, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -291,7 +291,7 @@ class ManageTools:
                 'title': title,
                 'description': description
             }
-            response = requests.post(url, headers=headers, data=data, files=files).json()
+            response = requests.post(url, headers=headers, data=data, files=files, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -309,7 +309,7 @@ class ManageTools:
             params = {
                 'question_id': qid
             }
-            response = requests.get(url, headers=headers, params=params).json()
+            response = requests.get(url, headers=headers, params=params, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -327,7 +327,7 @@ class ManageTools:
             params = {
                 'test_case_id': tid
             }
-            response = requests.delete(url, headers=headers, params=params).json()
+            response = requests.delete(url, headers=headers, params=params, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -348,7 +348,7 @@ class ManageTools:
             files = {
                 'code': StringIO(code)
             }
-            response = requests.post(url, headers=headers, data=data, files=files).json()
+            response = requests.post(url, headers=headers, data=data, files=files, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -366,7 +366,7 @@ class ManageTools:
             params = {
                 'question_id': qid
             }
-            response = requests.get(url, headers=headers, params=params).json()
+            response = requests.get(url, headers=headers, params=params, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()
@@ -385,7 +385,7 @@ class ManageTools:
                 'username': username,
                 'password': password
             }
-            response = requests.post(url, headers=headers, data=data).json()
+            response = requests.post(url, headers=headers, data=data, timeout=10).json()
             return True, response
         except:
             traceback.print_exc()

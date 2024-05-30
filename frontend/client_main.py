@@ -1,16 +1,25 @@
+import os
 import sys
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QListWidget, QTextEdit, QPushButton, QLineEdit, QMessageBox
 )
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QKeySequence
+from PySide6.QtGui import QKeySequence, QIcon
 from api_port import API_Loader
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.join(os.path.dirname(__file__), "asserts")
+
+    return os.path.join(base_path, relative_path)
 
 APP_NAME = "Logic Launchpad (Client)"
 TITLE_FONT_SIZE = 20
 SMALL_TITLE_FONT_SIZE = 18
-DESCRIPTION_FONT_SIZE = 16
+DESCRIPTION_FONT_SIZE = 14
 ANSWER_FONT_SIZE = 16
 RESULT_FONT_SIZE = 16
 
@@ -34,7 +43,7 @@ class LoginPage(QWidget):
         layout = QVBoxLayout(self)
         self.server_label = QLabel("Server URL:")
         self.server_input = QLineEdit()
-        self.server_input.setText("127.0.0.1:8000")
+        self.server_input.setText("williamlung.ddns.net:38000")
 
         self.username_label = QLabel("Username:")
         self.username_input = QLineEdit()
@@ -54,6 +63,8 @@ class LoginPage(QWidget):
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
         layout.addWidget(self.login_button, alignment=Qt.AlignCenter)
+
+        self.username_input.setFocus()
         
     def check_login(self):
         url = self.server_input.text()
@@ -73,6 +84,7 @@ class MainWindow(QMainWindow):
         self.api_loader = api_loader
         
         self.setWindowTitle(APP_NAME)
+        self.setWindowIcon(QIcon(resource_path(os.path.join("icon", "ios", "AppIcon-29.png"))))
         self.setFixedSize(QSize(1600, 900))
         
         # Central widget
@@ -95,8 +107,9 @@ class MainWindow(QMainWindow):
         self.question_title.setStyleSheet(f"font-size: {TITLE_FONT_SIZE}px; font-weight: bold;")
         self.question_description_label = QLabel("Description:")
         self.question_description_label.setStyleSheet(f"font-size: {SMALL_TITLE_FONT_SIZE}px; font-weight: bold")
-        self.question_description = QTextEdit("Select a question to view the description.")
-        self.question_description.setStyleSheet(f"font-size: {DESCRIPTION_FONT_SIZE}px;")
+        self.question_description = NoPasteTextEdit("Select a question to view the description.")
+        # Microsoft JhengHei
+        self.question_description.setStyleSheet(f"font-size: {DESCRIPTION_FONT_SIZE}px; font-family: Microsoft JhengHei;")
         self.question_description.setReadOnly(True)
         self.question_description.setFixedHeight(350)
         self.answer_label = QLabel("Answer:")

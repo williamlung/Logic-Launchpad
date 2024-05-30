@@ -1,4 +1,5 @@
 import datetime
+import os
 import sys
 import threading
 import time
@@ -9,8 +10,17 @@ from PySide6.QtWidgets import (
     QListWidgetItem, QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox, QFileDialog
 )
 from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QIcon
+
 from api_port import ManageTools
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.join(os.path.dirname(__file__), "asserts")
+
+    return os.path.join(base_path, relative_path)
 
 APP_NAME = "Logic Launchpad (Manager)"
 
@@ -20,15 +30,14 @@ class LoginPage(QWidget):
         
         self.setWindowTitle(f"{APP_NAME} Login")
         self.setFixedSize(QSize(400, 250))
-        
         layout = QVBoxLayout(self)
         self.server_label = QLabel("Server URL:")
         self.server_input = QLineEdit()
-        self.server_input.setText("127.0.0.1:8000")
+        self.server_input.setText("williamlung.ddns.net:38000")
 
         self.username_label = QLabel("Username:")
         self.username_input = QLineEdit()
-        
+
         self.password_label = QLabel("Password:")
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
@@ -50,6 +59,8 @@ class LoginPage(QWidget):
         layout.addWidget(self.week_label)
         layout.addWidget(self.week_input)
         layout.addWidget(self.login_button, alignment=Qt.AlignCenter)
+
+        self.username_input.setFocus()
         
     def check_login(self):
         url = self.server_input.text()
@@ -69,6 +80,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.api_loader = api_loader
         self.setWindowTitle(APP_NAME)
+        self.setWindowIcon(QIcon(resource_path(os.path.join("icon", "ios", "AppIcon-29.png"))))
         self.setGeometry(100, 100, 1600, 900)
         
         # Central widget
@@ -200,6 +212,8 @@ class MainWindow(QMainWindow):
     def select_question(self, index):
         if type(index) != int:
             index = self.question_list.currentRow()
+        if len(self.questions) == 0:
+            return
         qid = self.questions[index]["id"]
         status, question_info = self.api_loader.get_question_info(qid)
         if not status:
@@ -389,6 +403,8 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Success", response["message"])
 
     def update_userlist(self):
+        if len(self.questions) == 0:
+            return
         qid = self.questions[self.question_list.currentRow()]["id"]
         status, userlist = self.api_loader.get_user_list(qid)
         if not status:

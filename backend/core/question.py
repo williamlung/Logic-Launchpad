@@ -53,11 +53,20 @@ class GetQuestionView(APIView):
         if not Question.objects.filter(id=question_id).exists():
             return Response({"status": False, "message": "Invalid question id"})
         question = Question.objects.get(id=question_id)
+        if request.user.is_superuser:
+            code = question.start_code_template_file
+        else:
+            srs = SubmitRecord.objects.filter(user=request.user, question=question)
+            if srs.exists():
+                code = srs.last().answer
+                print(code)
+            else:
+                code = question.start_code_template_file
         return Response({
             "title": question.title,
             "description": question.description,
             "quota": QuestionQuota.objects.get(user=request.user, question=question).quota,
-            "start_code_template_file": question.start_code_template_file
+            "start_code_template_file": code
         })
 
 class CreateQuestionSerializer(serializers.Serializer):
@@ -96,7 +105,7 @@ class UpdateQuestionSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title = serializers.CharField()
     description = serializers.CharField()
-    start_code_template_file = serializers.FileField()
+    start_code_template_file = serializers.FileField(allow_empty_file=True)
 
 class UpdateQuestionView(APIView):
     permission_classes = [IsAdminUser]
@@ -114,6 +123,7 @@ class UpdateQuestionView(APIView):
         question = Question.objects.get(id=question_id)
         question.title = request.data.get('title')
         question.description = request.data.get('description')
+        question.start_code_template_file.delete()
         question.start_code_template_file = request.data.get('start_code_template_file')
         question.save()
         return Response({"status": True, "message": "Question updated successfully"})
@@ -135,6 +145,7 @@ class DeleteQuestionView(APIView):
         if not Question.objects.filter(id=question_id).exists():
             return Response({"status": False, "message": "Invalid question id"})
         question = Question.objects.get(id=question_id)
+        question.start_code_template_file.delete()
         question.delete()
         return Response({"status": True, "message": "Question deleted successfully"})
 
@@ -170,14 +181,16 @@ class SubmitAnswerView(APIView):
         for test_case in test_cases:
             test_case_input = test_case.input
             test_case_output = test_case.output
-            test_case_input = test_case_input.read().replace(b'\r\n', b'\n').decode('utf-8')
-            test_case_output = test_case_output.read().replace(b'\r\n', b'\n').decode('utf-8')
-            docker_answer = run_code_in_docker(answer_code, test_case_input)
+            test_case_input_text = test_case_input.read().replace(b'\r\n', b'\n').decode('utf-8')
+            test_case_output_text = test_case_output.read().replace(b'\r\n', b'\n').decode('utf-8')
+            test_case_input.close()
+            test_case_output.close()
+            docker_answer = run_code_in_docker(answer_code, test_case_input_text)
             if docker_answer["status"]:
-                if docker_answer["answer"] != test_case_output and not test_case.hidden:
-                    return Response({"status": False, "message": f"Test case failed in {case_num}/{total_case_num}\nInput:\n{test_case_input}\nExpected output:\n{test_case_output}\nYour output:\n{docker_answer['answer']}"})
-                elif docker_answer["answer"] != test_case_output and test_case.hidden:
-                    return Response({"status": False, "message": "Test case failed in hidden case{case_num}/{total_case_num}, good luck"})
+                if docker_answer["answer"] != test_case_output_text and not test_case.hidden:
+                    return Response({"status": False, "message": f"Test case failed in {case_num}/{total_case_num}\nInput:\n{test_case_input_text}\nExpected output:\n{test_case_output_text}\nYour output:\n{docker_answer['answer']}"})
+                elif docker_answer["answer"] != test_case_output_text and test_case.hidden:
+                    return Response({"status": False, "message": f"Test case failed in hidden case{case_num}/{total_case_num}, good luck"})
             else:
                 return Response({"status": False, "message": f"Test case failed in {case_num}/{total_case_num},\n Error: {docker_answer['message']}"})
             case_num += 1
@@ -211,12 +224,14 @@ class ValidateTestCasesView(APIView):
         for test_case in test_cases:
             test_case_input = test_case.input
             test_case_output = test_case.output
-            test_case_input = test_case_input.read().replace(b'\r\n', b'\n').decode('utf-8')
-            test_case_output = test_case_output.read().replace(b'\r\n', b'\n').decode('utf-8')
-            docker_answer = run_code_in_docker(answer_code, test_case_input)
+            test_case_input_text = test_case_input.read().replace(b'\r\n', b'\n').decode('utf-8')
+            test_case_output_text = test_case_output.read().replace(b'\r\n', b'\n').decode('utf-8')
+            test_case_input.close()
+            test_case_output.close()
+            docker_answer = run_code_in_docker(answer_code, test_case_input_text)
             if docker_answer["status"]:
-                if docker_answer["answer"] != test_case_output:
-                    return Response({"status": True, "message": f"Test case failed in {case_num}/{total_case_num}\nInput:\n{test_case_input}\nExpected output:\n{test_case_output}\nYour output:{docker_answer['answer']}"})
+                if docker_answer["answer"] != test_case_output_text:
+                    return Response({"status": True, "message": f"Test case failed in {case_num}/{total_case_num}\nInput:\n{test_case_input_text}\nExpected output:\n{test_case_output_text}\nYour output:{docker_answer['answer']}"})
             else:
                 return Response({"status": False, "message": f"Test case failed in {case_num}/{total_case_num},\n Error: {docker_answer['message']}"})
             case_num += 1

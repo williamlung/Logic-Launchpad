@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.urls import path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView   
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
@@ -9,6 +10,7 @@ from .views import (
     getQuestionAnswerView
 )
 urlpatterns = [
+    path('health/', lambda request: HttpResponse('OK'), name='health'),
     # Auth
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
