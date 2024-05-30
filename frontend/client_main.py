@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QKeySequence, QIcon
+from PySide6.QtWidgets import QSizePolicy
 from api_port import API_Loader
 
 def resource_path(relative_path):
@@ -85,7 +86,6 @@ class MainWindow(QMainWindow):
         
         self.setWindowTitle(APP_NAME)
         self.setWindowIcon(QIcon(resource_path(os.path.join("icon", "ios", "AppIcon-29.png"))))
-        self.setFixedSize(QSize(1600, 900))
         
         # Central widget
         central_widget = QWidget()
@@ -97,27 +97,28 @@ class MainWindow(QMainWindow):
         question_detail_layout = QVBoxLayout()
         answer_layout = QVBoxLayout()
 
-        # Question List
+        # Question List Layout
         self.question_list_ui = QListWidget()
-        self.question_list_ui.setFixedWidth(250)
+        self.question_list_ui.setFixedWidth(300)
         self.question_list_ui.currentItemChanged.connect(self.load_question_info)
-        
-        # Question Detail
+        question_list_layout.addWidget(QLabel("Questions List"))
+        question_list_layout.addWidget(self.question_list_ui)
+
+        # Question Detail Layout
         self.question_title = QLabel("Select a question")
         self.question_title.setStyleSheet(f"font-size: {TITLE_FONT_SIZE}px; font-weight: bold;")
         self.question_description_label = QLabel("Description:")
         self.question_description_label.setStyleSheet(f"font-size: {SMALL_TITLE_FONT_SIZE}px; font-weight: bold")
         self.question_description = NoPasteTextEdit("Select a question to view the description.")
-        # Microsoft JhengHei
         self.question_description.setStyleSheet(f"font-size: {DESCRIPTION_FONT_SIZE}px; font-family: Microsoft JhengHei;")
+        self.question_description.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.question_description.setReadOnly(True)
-        self.question_description.setFixedHeight(350)
         self.answer_label = QLabel("Answer:")
         self.answer_label.setStyleSheet(f"font-size: {SMALL_TITLE_FONT_SIZE}px; font-weight: bold")
         self.answer_text = NoPasteTextEdit()
+        self.answer_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.answer_text.setStyleSheet(f"font-size: {ANSWER_FONT_SIZE}px;")
-        self.answer_text.setFixedHeight(410)
-        self.answer_text.setFixedWidth(800)
+
         self.submit_part = QHBoxLayout()
         self.submit_button = QPushButton("Submit")
         self.submit_button.setFixedWidth(100)
@@ -126,23 +127,27 @@ class MainWindow(QMainWindow):
         self.quota_label.setStyleSheet("font-size: 12px;")
         self.submit_part.addWidget(self.submit_button)
         self.submit_part.addWidget(self.quota_label)
+
+        question_detail_layout.addWidget(self.question_title)
+        question_detail_layout.addWidget(self.question_description_label)
+        question_detail_layout.addWidget(self.question_description)
+        question_detail_layout.addWidget(self.answer_label)
+        question_detail_layout.addWidget(self.answer_text)
+        question_detail_layout.addLayout(self.submit_part)
+        question_detail_layout.setStretch(0, 1)
+        question_detail_layout.setStretch(1, 1)
+        question_detail_layout.setStretch(2, 45)
+        question_detail_layout.setStretch(3, 1)
+        question_detail_layout.setStretch(4, 45)
+        question_detail_layout.setStretch(5, 1)
+
+        # Answer layout
         self.result_label = QLabel("Result:")
         self.result_label.setStyleSheet(f"font-size: {SMALL_TITLE_FONT_SIZE}px; font-weight: bold")
         self.result_text = QTextEdit()
+        self.result_text.setFixedWidth(350)
         self.result_text.setReadOnly(True)
         self.result_text.setStyleSheet(f"font-size: {RESULT_FONT_SIZE}px;")
-
-        # Add widgets to layouts
-        question_list_layout.addWidget(QLabel("Questions List"))
-        question_list_layout.addWidget(self.question_list_ui)
-        
-        question_detail_layout.addWidget(self.question_title, alignment=Qt.AlignTop)
-        question_detail_layout.addWidget(self.question_description_label, alignment=Qt.AlignTop)
-        question_detail_layout.addWidget(self.question_description, alignment=Qt.AlignTop)
-        question_detail_layout.addWidget(self.answer_label, alignment=Qt.AlignBottom)
-        question_detail_layout.addWidget(self.answer_text, alignment=Qt.AlignBottom)
-        question_detail_layout.addLayout(self.submit_part)
-
         answer_layout.addWidget(self.result_label)
         answer_layout.addWidget(self.result_text)
 
