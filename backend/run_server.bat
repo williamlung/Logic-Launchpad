@@ -15,5 +15,5 @@ if exist "%ProgramData%\Anaconda3" (
 )
 
 call "%anaconda_path%\Scripts\activate.bat" c_practice_backend
-python manage.py runserver 0.0.0.0:38000
+python manage.py runserver 0.0.0.0:38000 --insecure
 pause

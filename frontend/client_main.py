@@ -85,7 +85,7 @@ class MainWindow(QMainWindow):
         self.api_loader = api_loader
         
         self.setWindowTitle(APP_NAME)
-        self.setWindowIcon(QIcon(resource_path(os.path.join("icon", "ios", "AppIcon-29.png"))))
+        self.setWindowIcon(QIcon(resource_path(os.path.join("icon", "ios", "AppIcon~ipad.png"))))
         
         # Central widget
         central_widget = QWidget()
