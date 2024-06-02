@@ -25,10 +25,15 @@ pip install -r requirements.txt
 
 > [!IMPORTANT]
 > Before you start the Django server, make sure your **Docker** is able to run.  
-> because all test cases are using the gcc Docker to compile and run the code  
-First, start the Django backend  
+> because all test cases are using the gcc Docker to compile and run the code
+
+Create the database file.  
 ```
 cd backend
+python manage.py migrate
+```
+Start the Django backend  
+```
 python manage.py runserver 0.0.0.0:38000 --insecure
 ```
 Run the manager_main.py for managing the questions set, test cases, and users.
