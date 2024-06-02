@@ -6,10 +6,8 @@ Logic LaunchPad is an intuitive platform designed specifically for teaching the 
 
 ![llp](https://github.com/williamlung/Logic-Launchpad/assets/112676745/822c61d8-2f3a-4e8a-85b4-f6429741b552)
 
-Main Techniques:  
-Programming Languages: Python  
-Frontend: Pyside6  
-Backend: Django, Docker  
+In the manager UI, you have the ability to manage the question list for each week based on your course design. You can also create test cases to check the submitted answers.  
+Additionally, you can monitor each student's quota and their last submission time.  
 
 ## Installing the environment
 Prepare the Python environment for running the backend server and frontend program  
