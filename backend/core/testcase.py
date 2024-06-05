@@ -87,8 +87,6 @@ class DeleteTestCaseView(APIView):
             if not TestCase.objects.filter(id=test_case_id).exists():
                 return Response({"status": False, "message": "Invalid test case id"})
             test_case = TestCase.objects.get(id=test_case_id)
-            test_case.input.delete()
-            test_case.output.delete()
             test_case.delete()
             return Response({"status": True, "message": "Test case deleted successfully"})
         except:

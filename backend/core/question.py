@@ -123,7 +123,6 @@ class UpdateQuestionView(APIView):
         question = Question.objects.get(id=question_id)
         question.title = request.data.get('title')
         question.description = request.data.get('description')
-        question.start_code_template_file.delete()
         question.start_code_template_file = request.data.get('start_code_template_file')
         question.save()
         return Response({"status": True, "message": "Question updated successfully"})
@@ -145,7 +144,6 @@ class DeleteQuestionView(APIView):
         if not Question.objects.filter(id=question_id).exists():
             return Response({"status": False, "message": "Invalid question id"})
         question = Question.objects.get(id=question_id)
-        question.start_code_template_file.delete()
         question.delete()
         return Response({"status": True, "message": "Question deleted successfully"})
 
@@ -231,7 +229,7 @@ class ValidateTestCasesView(APIView):
             docker_answer = run_code_in_docker(answer_code, test_case_input_text)
             if docker_answer["status"]:
                 if docker_answer["answer"] != test_case_output_text:
-                    return Response({"status": True, "message": f"Test case failed in {case_num}/{total_case_num}\nInput:\n{test_case_input_text}\nExpected output:\n{test_case_output_text}\nYour output:{docker_answer['answer']}"})
+                    return Response({"status": False, "message": f"Test case failed in {case_num}/{total_case_num}\nInput:\n{test_case_input_text}\nExpected output:\n{test_case_output_text}\nYour output:{docker_answer['answer']}"})
             else:
                 return Response({"status": False, "message": f"Test case failed in {case_num}/{total_case_num},\n Error: {docker_answer['message']}"})
             case_num += 1
@@ -269,23 +267,24 @@ def run_code_in_docker(answer_code:str, test_case_input:str) -> str:
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
     os.makedirs(temp_dir)
-    with open(os.path.join(temp_dir, "temp.c"), "w", encoding="utf-8") as f:
+    with open(os.path.join(temp_dir, "temp.c"), "w", encoding="big5") as f:
         f.write(answer_code)
-    with open(os.path.join(temp_dir, "temp.in"), "w", encoding="utf-8") as f:
+    with open(os.path.join(temp_dir, "temp.in"), "w", encoding="big5") as f:
         f.write(test_case_input)
-    run_command = "docker run --rm -v \"%cd%\"/temp:/temp gcc:latest /bin/sh -c \"gcc -o /temp/temp /temp/temp.c 2> /temp/gcc_error.txt && /temp/temp < /temp/temp.in > /temp/output.txt 2> /temp/runtime_error.txt && cat /temp/output.txt\""
+    run_command = "docker run --rm -v \"%cd%\"/temp:/temp gcc:latest /bin/sh -c \"gcc -finput-charset=utf-8 -o /temp/temp /temp/temp.c 2> /temp/gcc_error.txt && /temp/temp < /temp/temp.in > /temp/output.txt 2> /temp/runtime_error.txt && cat /temp/output.txt\""
     output = ""
-    command_output = subprocess.Popen(run_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8", shell=True)
+    command_output = subprocess.Popen(run_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, error = command_output.communicate()
+    output = output.decode("big5")
     if error:
         return {"status": False, "message": error}
     if os.path.exists(os.path.join(temp_dir, "gcc_error.txt")):
-        with open(os.path.join(temp_dir, "gcc_error.txt"), "r", encoding="utf-8") as f:
+        with open(os.path.join(temp_dir, "gcc_error.txt"), "r", encoding="big5") as f:
             error_msg = f.read()
         if len(error_msg) != 0:
             return {"status": False, "message": error_msg}
     if os.path.exists(os.path.join(temp_dir, "runtime_error.txt")):
-        with open(os.path.join(temp_dir, "runtime_error.txt"), "r", encoding="utf-8") as f:
+        with open(os.path.join(temp_dir, "runtime_error.txt"), "r", encoding="big5") as f:
             error_msg = f.read()
         if len(error_msg) != 0:
             return {"status": False, "message": error_msg}
