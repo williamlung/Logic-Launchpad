@@ -2,6 +2,6 @@ django==5.0.6
 djangorestframework==3.15.1
 djangorestframework-simplejwt==5.3.1
 drf-spectacular==0.27.2
-PySide6==6.7.0
-requests==2.32.2
-pyinstaller==6.7.0
+PySide6
+requests
+pyinstaller
