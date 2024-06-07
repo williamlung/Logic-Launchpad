@@ -23,6 +23,8 @@ class Command(BaseCommand):
             self.stdout.write(f'Exporting results for question: {question.title}')
             question_folder = os.path.join(output_path, str(id)+". "+question.title)
             os.makedirs(question_folder, exist_ok=True)
+            with open(os.path.join(question_folder, 'question.txt'), 'w', encoding="utf-8") as f:
+                f.write(question.description)
             for user in users:
                 if user.is_superuser:
                     continue
