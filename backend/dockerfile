@@ -1,0 +1,17 @@
+# Use the official GCC image as the base image
+FROM gcc:latest
+
+# Install clang-format
+RUN apt-get update && apt-get install -y clang-format
+
+# Set the working directory
+WORKDIR /temp
+
+# Copy the check_format.sh script to the image
+COPY check_format.sh /usr/local/bin/
+
+# Make the script executable
+RUN chmod +x /usr/local/bin/check_format.sh
+
+# Set the entrypoint to the script
+ENTRYPOINT ["/usr/local/bin/check_format.sh"]

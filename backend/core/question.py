@@ -173,6 +173,9 @@ class SubmitAnswerView(APIView):
             return Response({"status": False, "message": "You have no quota left for this question"})
         question_quota.quota -= 1
         question_quota.save()
+        format_checking = check_format(answer_code)
+        if not format_checking["status"]:
+            return Response({"status": False, "message": f"{format_checking['message']}"})
         case_num, total_case_num = 1, len(test_cases)
         # do the non-hidden test cases first
         test_cases = test_cases.order_by('hidden')
@@ -218,7 +221,11 @@ class ValidateTestCasesView(APIView):
         test_cases = TestCase.objects.filter(question=question)
         answer_code = request.data.get('code')
         answer_code = answer_code.read().replace(b'\r\n', b'\n').decode('utf-8')
+        format_checking = check_format(answer_code)
+        if not format_checking["status"]:
+            return Response({"status": False, "message": f"{format_checking['message']}"})
         case_num, total_case_num = 1, len(test_cases)
+        
         for test_case in test_cases:
             test_case_input = test_case.input
             test_case_output = test_case.output
@@ -260,9 +267,22 @@ class getQuestionAnswerView(APIView):
         return Response({
             "answer": answer_code
         })
+    
+def check_format(answer_code: str) -> dict:
+    temp_dir = os.path.join(os.getcwd(), 'temp')
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
+    os.makedirs(temp_dir)
+    with open(os.path.join(temp_dir, "temp.c"), "w", encoding="big5") as f:
+        f.write(answer_code)
+    format_check_command = "docker run --rm -v \"{}:/temp\" gcc-clang-format".format(temp_dir)
+    format_output = subprocess.run(format_check_command, shell=True, capture_output=True, text=True)
+    if format_output.returncode != 0:
+        return {"status": False, "message": format_output.stdout}
+    return {"status": True, "message": "Format check passed"}
 
 
-def run_code_in_docker(answer_code:str, test_case_input:str) -> str:
+def run_code_in_docker(answer_code:str, test_case_input:str) -> dict:
     temp_dir = os.path.join(os.getcwd(), 'temp')
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
@@ -271,7 +291,7 @@ def run_code_in_docker(answer_code:str, test_case_input:str) -> str:
         f.write(answer_code)
     with open(os.path.join(temp_dir, "temp.in"), "w", encoding="big5") as f:
         f.write(test_case_input)
-    run_command = "docker run --rm -v \"%cd%\"/temp:/temp gcc:latest /bin/sh -c \"gcc -finput-charset=utf-8 -o /temp/temp /temp/temp.c 2> /temp/gcc_error.txt && /temp/temp < /temp/temp.in > /temp/output.txt 2> /temp/runtime_error.txt && cat /temp/output.txt\""
+    run_command = "docker run --rm -v \"%cd%\"/temp:/temp gcc:latest /bin/sh -c \"gcc -finput-charset=utf-8 -o /temp/temp /temp/temp.c -lm 2> /temp/gcc_error.txt && /temp/temp < /temp/temp.in > /temp/output.txt 2> /temp/runtime_error.txt && cat /temp/output.txt\""
     output = ""
     command_output = subprocess.Popen(run_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, error = command_output.communicate()
