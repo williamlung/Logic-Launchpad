@@ -1,7 +1,7 @@
 import os
 import shutil
 import subprocess
-import threading
+import time
 
 from django.conf import settings
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -282,8 +282,7 @@ def check_format(answer_code: str) -> dict:
         return {"status": False, "message": format_output.stdout}
     return {"status": True, "message": "Format check passed"}
 
-
-def run_code_in_docker(answer_code: str, test_case_input: str, timeout: int = 5) -> dict:
+def run_code_in_docker(answer_code:str, test_case_input:str) -> dict:
     temp_dir = os.path.join(os.getcwd(), 'temp')
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
@@ -292,43 +291,24 @@ def run_code_in_docker(answer_code: str, test_case_input: str, timeout: int = 5)
         f.write(answer_code)
     with open(os.path.join(temp_dir, "temp.in"), "w", encoding="big5") as f:
         f.write(test_case_input)
-
-    run_command = (
-        "docker run --rm -v \"{0}\"/temp:/temp gcc:latest /bin/sh -c "
-        "\"gcc -finput-charset=utf-8 -o /temp/temp /temp/temp.c -lm 2> /temp/gcc_error.txt && "
-        "/temp/temp < /temp/temp.in > /temp/output.txt 2> /temp/runtime_error.txt && "
-        "cat /temp/output.txt\"".format(os.getcwd())
-    )
-
-    def execute_command():
-        nonlocal output, error
-        command_output = subprocess.Popen(run_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        output, error = command_output.communicate()
-        output = output.decode("big5")
-        error = error.decode("big5")
-
+    run_command = "docker run --rm -v \"%cd%\"/temp:/temp gcc:latest timeout 5 /bin/sh -c \"timeout 5 gcc -finput-charset=utf-8 -o /temp/temp /temp/temp.c -lm 2> /temp/gcc_error.txt && /temp/temp < /temp/temp.in > /temp/output.txt 2> /temp/runtime_error.txt && cat /temp/output.txt\""
     output = ""
-    error = ""
-    command_thread = threading.Thread(target=execute_command)
-    command_thread.start()
-    command_thread.join(timeout)
-
-    if command_thread.is_alive():
-        return {"status": False, "message": "Execution timed out (potential infinite loop)"}
-
+    start_time = time.time()
+    command_output = subprocess.Popen(run_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    output, error = command_output.communicate()
+    output = output.decode("big5")
+    if time.time() - start_time > 5:
+        return {"status": False, "message": "Time limit exceeded. 道別不可再等你，不管有沒有機。"}
     if error:
         return {"status": False, "message": error}
-    
     if os.path.exists(os.path.join(temp_dir, "gcc_error.txt")):
         with open(os.path.join(temp_dir, "gcc_error.txt"), "r", encoding="big5") as f:
             error_msg = f.read()
         if len(error_msg) != 0:
             return {"status": False, "message": error_msg}
-    
     if os.path.exists(os.path.join(temp_dir, "runtime_error.txt")):
         with open(os.path.join(temp_dir, "runtime_error.txt"), "r", encoding="big5") as f:
             error_msg = f.read()
         if len(error_msg) != 0:
             return {"status": False, "message": error_msg}
-
     return {"status": True, "answer": output}
